@@ -1,0 +1,101 @@
+{
+  "reference": "baseline_momentum_short",
+  "relative_key_mae_reduction": 0.1071032644240909,
+  "at_least_10pct_reduction": true,
+  "no_key_horizon_more_than_5pct_worse": true,
+  "absolute_horizon_gates": {
+    "1": true,
+    "3": true,
+    "7": true,
+    "14": true
+  },
+  "key_origin_block_uncertainty": {
+    "mean_mae_reduction": 0.0922811359553983,
+    "ci95": [
+      -0.07371362580854027,
+      0.23730650988350518
+    ],
+    "origin_block_days": 14,
+    "repeats": 2000,
+    "origin_count": 65,
+    "horizons": [
+      1,
+      3,
+      7,
+      14
+    ],
+    "method": "Circular contiguous origin blocks sampled jointly across horizons; equal horizon weighting."
+  },
+  "by_horizon_uncertainty": {
+    "1": {
+      "mean_mae_reduction": 0.007564410527022254,
+      "ci95": [
+        -0.007275003894279992,
+        0.0210704506341282
+      ],
+      "origin_block_days": 14,
+      "repeats": 2000,
+      "origin_count": 65,
+      "horizons": [
+        1
+      ],
+      "method": "Circular contiguous origin blocks sampled jointly across horizons; equal horizon weighting."
+    },
+    "3": {
+      "mean_mae_reduction": 0.03951775765864727,
+      "ci95": [
+        -0.038504497594942726,
+        0.11085865457843205
+      ],
+      "origin_block_days": 14,
+      "repeats": 2000,
+      "origin_count": 63,
+      "horizons": [
+        3
+      ],
+      "method": "Circular contiguous origin blocks sampled jointly across horizons; equal horizon weighting."
+    },
+    "7": {
+      "mean_mae_reduction": 0.1155193326137154,
+      "ci95": [
+        -0.10113582321522276,
+        0.3715214594268095
+      ],
+      "origin_block_days": 14,
+      "repeats": 2000,
+      "origin_count": 59,
+      "horizons": [
+        7
+      ],
+      "method": "Circular contiguous origin blocks sampled jointly across horizons; equal horizon weighting."
+    },
+    "14": {
+      "mean_mae_reduction": 0.20652304302220814,
+      "ci95": [
+        -0.2606467483507911,
+        0.6852889348894996
+      ],
+      "origin_block_days": 14,
+      "repeats": 2000,
+      "origin_count": 52,
+      "horizons": [
+        14
+      ],
+      "method": "Circular contiguous origin blocks sampled jointly across horizons; equal horizon weighting."
+    }
+  },
+  "folds": {
+    "2026-05-15": {
+      "selected_key_mae": 0.7578574273849148,
+      "baseline_key_mae": 0.9329428571428617
+    },
+    "2026-06-05": {
+      "selected_key_mae": 0.4399249609088878,
+      "baseline_key_mae": 0.4949571428571451
+    },
+    "2026-06-26": {
+      "selected_key_mae": 1.3276349396549474,
+      "baseline_key_mae": 1.3932539039093852
+    }
+  }
+}

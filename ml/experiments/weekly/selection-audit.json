@@ -1,0 +1,19 @@
+{
+  "frozen_at_utc": "2026-09-16T17:35:24.568128+00:00",
+  "selected_sha256": "28f56bd0f7c30f9b82f61dbe67c76660f8aede9a51ccddef5d9d9e185ad34e99",
+  "data_status": {
+    "stage": "final",
+    "market_ready": true,
+    "daily_selected_inputs_exactly_unchanged": true
+  },
+  "validation_gates": {
+    "mean_mae_improves_10_percent": true,
+    "next_observation_at_most_2_ppl": true,
+    "second_observation_at_most_3_ppl": true,
+    "neither_horizon_over_5_percent_worse": true
+  },
+  "calibration_test_accessed": false,
+  "selected_configuration_count": 1,
+  "final_unique_candidates": 7,
+  "stop_reason": "All provisional validation gates pass with positive blocked comparative-error intervals; freeze before the one sealed test. Known2023 regression retained as a limitation."
+}

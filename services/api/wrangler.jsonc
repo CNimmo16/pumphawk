@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pump-hawk-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "APP_ORIGIN": "http://localhost:3100",
+    "BETTER_AUTH_URL": "http://localhost:3100",
+    // Opt in locally through .dev.vars with MARKET_DATA_MODE=sample after db:seed.
+    "MARKET_DATA_MODE": "live",
+    "MARKET_SOURCE": "provider",
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgres://pumphawk:pumphawk@127.0.0.1:55435/pumphawk",
+    },
+  ],
+  "triggers": { "crons": ["0 7 * * *", "0 8 * * *", "10 * * * *"] },
+}

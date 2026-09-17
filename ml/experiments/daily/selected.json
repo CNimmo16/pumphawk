@@ -1,0 +1,254 @@
+{
+  "1": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "2": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "3": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "4": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "5": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "6": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "7": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "8": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "9": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "10": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "11": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "12": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "13": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "14": {
+    "name": "03_upstream_ridge",
+    "kind": "ridge",
+    "features": [
+      "x_pump_change_1",
+      "x_pump_slope_short",
+      "x_pump_slope_long",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28",
+      "x_bz_change_7"
+    ],
+    "params": {
+      "alpha": 10.0
+    },
+    "train_days": null,
+    "blend": 1.0
+  }
+}

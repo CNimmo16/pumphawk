@@ -1,0 +1,89 @@
+{
+  "frequency": "weekly",
+  "horizon": 14,
+  "candidate": {
+    "name": "refined_huber",
+    "kind": "huber",
+    "features": [
+      "x_pump_change_7",
+      "x_pump_change_14",
+      "x_pump_change_28",
+      "x_b7h_change_3",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28"
+    ],
+    "params": {
+      "epsilon": 1.35,
+      "alpha": 0.1,
+      "max_iter": 2000
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "fitted_before": "2026-01-01",
+  "train_rows": 519,
+  "first_origin": "2016-01-07T08:00:00+00:00",
+  "last_origin": "2025-12-11T08:00:00+00:00",
+  "last_target_available_at": "2025-12-25T08:00:00+00:00",
+  "training_input_sha256": "6e1bc8b12547e24a0041b7ddda28b9fe34262829733e54fcc399da00858deb5e",
+  "input_columns": [
+    "x_pump_change_7",
+    "x_pump_change_14",
+    "x_pump_change_28",
+    "x_b7h_change_3",
+    "x_b7h_change_7",
+    "x_b7h_change_14",
+    "x_b7h_change_28"
+  ],
+  "transformed_columns": [
+    "x_pump_change_7",
+    "x_pump_change_14",
+    "x_pump_change_28",
+    "x_b7h_change_3",
+    "x_b7h_change_7",
+    "x_b7h_change_14",
+    "x_b7h_change_28"
+  ],
+  "imputer_medians": [
+    0.0899999999999749,
+    0.1500000000000056,
+    0.3500000000000085,
+    -0.0309392975166105,
+    0.0518788197062392,
+    0.2280203891651169,
+    0.5120546442041061
+  ],
+  "missing_indicator_indices": [],
+  "scaler_mean": [
+    0.06660886319845859,
+    0.13265895953757229,
+    0.2490173410404625,
+    -0.05895377246566647,
+    0.035433304309032264,
+    0.12418613489225418,
+    0.40285669940854435
+  ],
+  "scaler_scale": [
+    1.137272903159377,
+    2.126601099476006,
+    3.8360658934901424,
+    1.2345270439697307,
+    1.5139975007650088,
+    2.27129519143924,
+    3.6540201001762256
+  ],
+  "prediction_blend": 1.0,
+  "fit_scope": "Pre-calibration only; no Jan2026 onward labels or test results accessed.",
+  "standardized_coefficients": [
+    1.0823336166657134,
+    -0.11383264766984756,
+    0.12234958674271675,
+    -0.1627201332992049,
+    0.15067157939742226,
+    0.5703008933224414,
+    0.5235535063107556
+  ],
+  "intercept": 0.20307252914599502,
+  "inference": "Impute listed inputs; append missing indicators; subtract scaler_mean and divide by scaler_scale; dot standardized_coefficients plus intercept; multiply prediction_blend. Output is pence/litre change from latest released reference observation."
+}

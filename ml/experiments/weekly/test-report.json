@@ -1,0 +1,100 @@
+{
+  "mode": "weekly",
+  "fingerprint": "8f95a4eef145b94192c4072283b1fe0a47c3a871f6d5974cfaa6424e6efd6bc3",
+  "test_start": "2026-04-01 00:00:00+00:00",
+  "horizons": {
+    "7": {
+      "model": {
+        "n": 24,
+        "mae": 0.8108335211503422,
+        "rmse": 1.0808583113100314,
+        "bias": 0.05554296989200588,
+        "p90_abs_error": 1.7881553880396586,
+        "direction_accuracy_moving": 0.8333333333333334,
+        "action_accuracy": 0.6666666666666666,
+        "decision_regret_ppl": 0.10333333333333172
+      },
+      "baseline": {
+        "n": 24,
+        "mae": 1.1708333333333332,
+        "rmse": 1.558581085474857,
+        "bias": 0.036666666666667735,
+        "p90_abs_error": 2.532000000000016,
+        "direction_accuracy_moving": 0.7777777777777778,
+        "action_accuracy": 0.6666666666666666,
+        "decision_regret_ppl": 0.2099999999999973
+      },
+      "baseline_name": "momentum_short",
+      "mae_skill": 0.3074731491954371,
+      "train_count": 533,
+      "calibration_count": 12,
+      "interval_nominal": 0.9,
+      "interval_radius": 2.4830381188850286,
+      "interval_coverage": 0.9583333333333334,
+      "paired_skill_ci": {
+        "mean_mae_reduction": 0.35999981218299076,
+        "ci95": [
+          0.19109385789038497,
+          0.5197387395535064
+        ],
+        "block_size": 4
+      }
+    },
+    "14": {
+      "model": {
+        "n": 23,
+        "mae": 1.876829262975915,
+        "rmse": 2.2269532384134285,
+        "bias": 0.19415093595833374,
+        "p90_abs_error": 3.49326021348603,
+        "direction_accuracy_moving": 0.75,
+        "action_accuracy": 0.6521739130434783,
+        "decision_regret_ppl": 0.2691304347826086
+      },
+      "baseline": {
+        "n": 23,
+        "mae": 3.1517391304347795,
+        "rmse": 4.016598712516752,
+        "bias": 0.2517391304347851,
+        "p90_abs_error": 6.377999999999941,
+        "direction_accuracy_moving": 0.6,
+        "action_accuracy": 0.4782608695652174,
+        "decision_regret_ppl": 0.7330434782608677
+      },
+      "baseline_name": "momentum_short",
+      "mae_skill": 0.40450995932616796,
+      "train_count": 532,
+      "calibration_count": 11,
+      "interval_nominal": 0.9,
+      "interval_radius": 5.34021872709634,
+      "interval_coverage": 1.0,
+      "paired_skill_ci": {
+        "mean_mae_reduction": 1.2749098674588637,
+        "ci95": [
+          0.7193253523712518,
+          1.816692469583861
+        ],
+        "block_size": 4
+      }
+    }
+  },
+  "key_horizon_mean_mae": 1.3438313920631286,
+  "key_horizon_baseline_mae": 2.1612862318840564,
+  "key_horizon_mae_skill": 0.37822608952092773,
+  "gates": {
+    "mae_skill_at_least_10_percent": true,
+    "absolute_mae_targets": true,
+    "no_key_horizon_over_5_percent_worse": true
+  },
+  "passes_test_numerical_gates": true,
+  "joint_skill_ci": {
+    "mean_mae_reduction": 0.8174548398209273,
+    "ci95": [
+      0.5058345349166341,
+      1.1073346846985959
+    ],
+    "block_size": 4
+  },
+  "interval_caveat": "Empirical pre-test residual bands, then coefficients refit at test start. Time dependence and regime shifts invalidate exchangeability; nominal coverage is not guaranteed.",
+  "deployment_status": "research_only_pending_review"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "pump-hawk",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "concurrently -k -n api,web,data -c cyan,green,yellow 'pnpm --filter @pump-hawk/api dev' 'pnpm --filter @pump-hawk/web dev' 'pnpm data:watch'",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @pump-hawk/api db:generate",
+    "db:migrate": "pnpm --filter @pump-hawk/api db:migrate",
+    "db:seed": "pnpm --filter @pump-hawk/api db:seed",
+    "openapi": "pnpm --filter @pump-hawk/api openapi && pnpm --filter @pump-hawk/openapi generate",
+    "typecheck": "pnpm --filter @pump-hawk/api typecheck && pnpm --filter @pump-hawk/web typecheck",
+    "test": "pnpm --filter @pump-hawk/api test",
+    "test:integration": "pnpm --filter @pump-hawk/api test:integration",
+    "build": "pnpm openapi && pnpm --filter @pump-hawk/api build && pnpm --filter @pump-hawk/web build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "data:sync": "pnpm --filter @pump-hawk/api data:sync",
+    "data:watch": "pnpm --filter @pump-hawk/api data:watch"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.8.0",
+    "typescript": "^5.9.3"
+  }
+}

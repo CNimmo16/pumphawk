@@ -1,0 +1,11 @@
+{
+  "mean_mae_reduction_ppl": 0.03857830543976171,
+  "ci95_ppl": [
+    -0.028708121324561253,
+    0.10564364714982341
+  ],
+  "fraction_reduction_positive": 0.87275,
+  "block_origins": 8,
+  "repeats": 4000,
+  "method": "Paired circular chronological-origin blocks stratified by year; same origins across horizons; equal horizon score."
+}

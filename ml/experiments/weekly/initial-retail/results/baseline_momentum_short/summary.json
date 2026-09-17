@@ -1,0 +1,160 @@
+{
+  "name": "baseline_momentum_short",
+  "mean_horizon_mae": 0.8796606274218834,
+  "horizons": {
+    "7": {
+      "n": 312,
+      "mae": 0.541089743589745,
+      "rmse": 0.9731471546561634,
+      "bias": 0.004487179487179528,
+      "p90_abs_error": 1.2090000000000065,
+      "direction_accuracy_moving": 0.9479768786127167,
+      "action_accuracy": 0.7564102564102564,
+      "decision_regret_ppl": 0.0485256410256413
+    },
+    "14": {
+      "n": 311,
+      "mae": 1.2182315112540218,
+      "rmse": 2.0761855173010937,
+      "bias": 0.009742765273311907,
+      "p90_abs_error": 2.5999999999999925,
+      "direction_accuracy_moving": 0.8995433789954338,
+      "action_accuracy": 0.7138263665594855,
+      "decision_regret_ppl": 0.1223472668810292
+    }
+  },
+  "folds": {
+    "2020_h7": {
+      "n": 53,
+      "mae": 0.6328301886792451,
+      "rmse": 1.3135476950494827,
+      "bias": 0.006037735849056419,
+      "p90_abs_error": 1.555999999999996,
+      "direction_accuracy_moving": 0.96,
+      "action_accuracy": 0.7169811320754716,
+      "decision_regret_ppl": 0.03584905660377396
+    },
+    "2020_h14": {
+      "n": 53,
+      "mae": 1.2381132075471724,
+      "rmse": 2.32166092140137,
+      "bias": 0.01924528301886774,
+      "p90_abs_error": 2.7439999999999936,
+      "direction_accuracy_moving": 0.9142857142857143,
+      "action_accuracy": 0.7358490566037735,
+      "decision_regret_ppl": 0.09811320754716986
+    },
+    "2021_h7": {
+      "n": 52,
+      "mae": 0.28230769230769215,
+      "rmse": 0.38579089593278,
+      "bias": 0.006923076923076719,
+      "p90_abs_error": 0.5050000000000049,
+      "direction_accuracy_moving": 0.9705882352941176,
+      "action_accuracy": 0.7884615384615384,
+      "decision_regret_ppl": 0.020576923076923492
+    },
+    "2021_h14": {
+      "n": 52,
+      "mae": 0.6628846153846149,
+      "rmse": 0.8972318540934658,
+      "bias": 0.03249999999999955,
+      "p90_abs_error": 1.6029999999999636,
+      "direction_accuracy_moving": 0.975,
+      "action_accuracy": 0.8653846153846154,
+      "decision_regret_ppl": 0.039423076923076596
+    },
+    "2022_h7": {
+      "n": 52,
+      "mae": 1.121153846153848,
+      "rmse": 1.7257216996420348,
+      "bias": 0.022307692307692275,
+      "p90_abs_error": 2.2550000000000034,
+      "direction_accuracy_moving": 0.9333333333333333,
+      "action_accuracy": 0.8461538461538461,
+      "decision_regret_ppl": 0.09750000000000042
+    },
+    "2022_h14": {
+      "n": 52,
+      "mae": 2.8448076923076973,
+      "rmse": 3.9642821156304873,
+      "bias": 0.058269230769231,
+      "p90_abs_error": 6.462999999999972,
+      "direction_accuracy_moving": 0.8695652173913043,
+      "action_accuracy": 0.7692307692307693,
+      "decision_regret_ppl": 0.2428846153846164
+    },
+    "2023_h7": {
+      "n": 52,
+      "mae": 0.40826923076923277,
+      "rmse": 0.5146563453860777,
+      "bias": -0.028653846153845638,
+      "p90_abs_error": 0.7669999999999817,
+      "direction_accuracy_moving": 1.0,
+      "action_accuracy": 0.7884615384615384,
+      "decision_regret_ppl": 0.03269230769230747
+    },
+    "2023_h14": {
+      "n": 52,
+      "mae": 0.8732692307692311,
+      "rmse": 1.1798671698380059,
+      "bias": -0.05480769230769133,
+      "p90_abs_error": 1.7500000000000193,
+      "direction_accuracy_moving": 0.9,
+      "action_accuracy": 0.6538461538461539,
+      "decision_regret_ppl": 0.0913461538461533
+    },
+    "2024_h7": {
+      "n": 52,
+      "mae": 0.4009615384615411,
+      "rmse": 0.5103034542158417,
+      "bias": 0.006730769230768578,
+      "p90_abs_error": 0.8479999999999954,
+      "direction_accuracy_moving": 0.8928571428571429,
+      "action_accuracy": 0.7307692307692307,
+      "decision_regret_ppl": 0.055576923076923364
+    },
+    "2024_h14": {
+      "n": 52,
+      "mae": 0.8828846153846174,
+      "rmse": 1.0446429275852354,
+      "bias": -0.009038461538462658,
+      "p90_abs_error": 1.5369999999999662,
+      "direction_accuracy_moving": 0.8787878787878788,
+      "action_accuracy": 0.6923076923076923,
+      "decision_regret_ppl": 0.1273076923076924
+    },
+    "2025_h7": {
+      "n": 51,
+      "mae": 0.3964705882352969,
+      "rmse": 0.5259202951614884,
+      "bias": 0.013725490196079253,
+      "p90_abs_error": 0.9099999999999968,
+      "direction_accuracy_moving": 0.9285714285714286,
+      "action_accuracy": 0.6666666666666666,
+      "decision_regret_ppl": 0.04921568627451018
+    },
+    "2025_h14": {
+      "n": 50,
+      "mae": 0.7906000000000065,
+      "rmse": 1.1549900432471272,
+      "bias": 0.012200000000000717,
+      "p90_abs_error": 1.6250000000000318,
+      "direction_accuracy_moving": 0.84,
+      "action_accuracy": 0.56,
+      "decision_regret_ppl": 0.13600000000000137
+    }
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "scikit_learn": "1.9.1",
+    "framework_sha256": "c419ea7d6d4856f3ac53136701e631b7f846df15bf65b9155a5919d1c135548c"
+  },
+  "data_status": {
+    "stage": "retail_only_initial_baseline",
+    "market_ready": false,
+    "note": "Only initial pump-only validation may run. Parent will rebuild with real upstream data before candidate selection."
+  }
+}

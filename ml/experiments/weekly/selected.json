@@ -1,0 +1,42 @@
+{
+  "7": {
+    "name": "refined_huber",
+    "kind": "huber",
+    "features": [
+      "x_pump_change_7",
+      "x_pump_change_14",
+      "x_pump_change_28",
+      "x_b7h_change_3",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28"
+    ],
+    "params": {
+      "epsilon": 1.35,
+      "alpha": 0.1,
+      "max_iter": 2000
+    },
+    "train_days": null,
+    "blend": 1.0
+  },
+  "14": {
+    "name": "refined_huber",
+    "kind": "huber",
+    "features": [
+      "x_pump_change_7",
+      "x_pump_change_14",
+      "x_pump_change_28",
+      "x_b7h_change_3",
+      "x_b7h_change_7",
+      "x_b7h_change_14",
+      "x_b7h_change_28"
+    ],
+    "params": {
+      "epsilon": 1.35,
+      "alpha": 0.1,
+      "max_iter": 2000
+    },
+    "train_days": null,
+    "blend": 1.0
+  }
+}

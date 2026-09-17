@@ -1,0 +1,205 @@
+import { z } from "@hono/zod-openapi";
+export { z };
+export const ErrorSchema = z
+  .object({ error: z.object({ code: z.string(), message: z.string() }) })
+  .openapi("ApiError");
+export const DriverInput = z
+  .object({
+    vehicleName: z.string().trim().min(1).max(60).default("My car"),
+    tankCapacityLitres: z.number().min(15).max(150),
+    currentLitres: z.number().min(0).max(150),
+    mpg: z.number().min(10).max(150).describe("UK imperial miles per gallon"),
+    dailyMiles: z.number().min(0).max(600),
+    smsEnabled: z.boolean(),
+    mileageMode: z.enum(["average", "weekly"]).optional(),
+    weekdayMiles: z
+      .array(z.number().min(0).max(600))
+      .length(7)
+      .optional()
+      .describe("Monday through Sunday"),
+  })
+  .refine((d) => d.mileageMode !== "weekly" || !!d.weekdayMiles, {
+    message: "Enter mileage for all seven days",
+    path: ["weekdayMiles"],
+  })
+  .refine((d) => d.currentLitres <= d.tankCapacityLitres, {
+    message: "Fuel cannot exceed tank capacity",
+    path: ["currentLitres"],
+  })
+  .openapi("DriverInput");
+export const DriverSchema = DriverInput.safeExtend({
+  onboardingComplete: z.boolean().optional(),
+  fuelUpdatedAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+}).openapi("Driver");
+export const ObservationSchema = z
+  .object({
+    date: z.iso.date(),
+    wholesalePence: z
+      .number()
+      .min(1)
+      .max(500)
+      .describe("Refined petrol wholesale price in GBP pence/litre"),
+    retailPence: z.number().min(30).max(600),
+    usdPerGbp: z.number().min(0.3).max(3),
+    disruption: z.boolean().default(false),
+  })
+  .openapi("MarketObservation");
+export const IngestSchema = z
+  .object({
+    source: z.string().regex(/^[a-z0-9-]{2,50}$/),
+    observations: z.array(ObservationSchema).min(1).max(90),
+  })
+  .openapi("MarketIngestion");
+export const SignalBreakdownSchema = z.object({
+  name: z.enum(["pump", "b7h", "crude"]),
+  label: z.string(),
+  weight: z.number(),
+  contributionPence: z.number(),
+  detail: z.string(),
+  available: z.boolean(),
+});
+export const ForecastPointSchema = z.object({
+  date: z.iso.date(),
+  pricePence: z.number(),
+  lowPence: z.number(),
+  highPence: z.number(),
+  confidence: z.enum(["low", "medium"]).optional(),
+  signals: z.array(SignalBreakdownSchema).optional(),
+});
+export const ForecastSchema = z
+  .object({
+    asOf: z.iso.date(),
+    generatedAt: z.iso.datetime(),
+    source: z.string(),
+    mode: z.enum(["demo", "live", "sample"]),
+    fuelType: z.literal("petrol"),
+    currency: z.literal("GBP"),
+    unit: z.literal("pence/litre"),
+    currentPricePence: z.number(),
+    wholesalePence: z.number().nullable(),
+    wholesaleChangePercent: z.number().nullable(),
+    usdPerGbp: z.number().nullable(),
+    direction: z.enum(["falling", "rising", "steady"]),
+    signal: z.enum(["falling", "rising", "disruption", "fx-shock", "steady"]),
+    consecutiveFallingDays: z.number(),
+    history: z.array(
+      z.object({
+        date: z.iso.date(),
+        pricePence: z.number(),
+        wholesalePence: z.number().nullable(),
+        source: z.enum(["fuel-finder", "sample"]).optional(),
+      }),
+    ),
+    points: z.array(ForecastPointSchema),
+    explanation: z.string(),
+    methodology: z.string(),
+    warnings: z.array(z.string()),
+  })
+  .openapi("Forecast");
+export const RecommendationSchema = z
+  .object({
+    action: z.enum(["wait", "top-up", "fill-now", "hold", "update-tank"]),
+    title: z.string(),
+    reason: z.string(),
+    litresToBuy: z.number(),
+    estimatedCostGbp: z.number(),
+    estimatedSavingsGbp: z.number(),
+    fillDate: z.iso.date(),
+    nextFillDate: z.iso.date(),
+    estimatedCurrentLitres: z.number(),
+    reserveLitres: z.number(),
+    daysOfFuel: z.number().nullable(),
+    targetPricePence: z.number(),
+    tips: z.array(z.string()),
+  })
+  .openapi("Recommendation");
+export const DashboardSchema = z
+  .object({
+    driver: DriverSchema,
+    forecast: ForecastSchema.nullable(),
+    recommendation: RecommendationSchema.nullable(),
+    forecastError: z.string().optional(),
+  })
+  .openapi("Dashboard");
+export const SmsSchema = z
+  .object({
+    id: z.string(),
+    kind: z.enum(["otp", "fill-alert"]),
+    body: z.string(),
+    status: z.enum(["pending", "stubbed", "failed"]),
+    createdAt: z.iso.datetime(),
+  })
+  .openapi("SmsMessage");
+export const PhoneSchema = z
+  .object({
+    phoneNumber: z
+      .string()
+      .regex(/^\+447\d{9}$/)
+      .describe("UK mobile in E.164 format, e.g. +447700900123"),
+  })
+  .openapi("PhoneNumber");
+export const VerifySchema = PhoneSchema.extend({
+  code: z.string().regex(/^\d{6}$/),
+}).openapi("VerifyPhone");
+export type DriverInputType = z.infer<typeof DriverInput>;
+export type Driver = z.infer<typeof DriverSchema>;
+export type Observation = z.infer<typeof ObservationSchema>;
+export type Forecast = z.infer<typeof ForecastSchema>;
+export type Recommendation = z.infer<typeof RecommendationSchema>;
+
+export const LocationSchema = z.object({
+  latitude: z.number().min(49).max(61),
+  longitude: z.number().min(-9).max(2),
+});
+export const StationSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    brand: z.string(),
+    address: z.string(),
+    postcode: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+    motorway: z.boolean(),
+    closed: z.boolean(),
+    pricePence: z.number().nullable(),
+    priceUpdatedAt: z.iso.datetime().nullable(),
+    checkedAt: z.iso.datetime().nullable(),
+    distanceMiles: z.number().optional(),
+  })
+  .openapi("Station");
+export const NearbySchema = z
+  .object({
+    stations: z.array(StationSchema),
+    radiusMiles: z.literal(5),
+    checkedAt: z.iso.datetime().nullable(),
+  })
+  .openapi("NearbyStations");
+export const TrackedSchema = z
+  .object({
+    stations: z.array(
+      StationSchema.extend({
+        history: z.array(
+          z.object({ observedAt: z.iso.datetime(), pricePence: z.number() }),
+        ),
+      }),
+    ),
+    since: z.iso.datetime(),
+  })
+  .openapi("TrackedStations");
+export const OnboardingSchema = z
+  .object({
+    driver: DriverInput,
+    location: LocationSchema,
+    stationIds: z.array(z.string().min(1).max(100)).min(1).max(3),
+  })
+  .refine((v) => new Set(v.stationIds).size === v.stationIds.length, {
+    message: "Choose different stations",
+    path: ["stationIds"],
+  })
+  .openapi("OnboardingInput");
+export const TankInput = z
+  .object({ currentLitres: z.number().min(0).max(150) })
+  .openapi("TankInput");
+export type Station = z.infer<typeof StationSchema>;

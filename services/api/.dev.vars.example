@@ -1,0 +1,11 @@
+BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters
+INGEST_API_KEY=replace-with-random-ingestion-key
+DATABASE_URL=postgres://pumphawk:pumphawk@127.0.0.1:55435/pumphawk
+
+# Use sample after pnpm db:seed to enable local synthetic pump history.
+MARKET_DATA_MODE=live
+
+# Market feeds (server-only; obtain your own credentials)
+DATABENTO_API_KEY=
+FUEL_FINDER_CLIENT_ID=
+FUEL_FINDER_CLIENT_SECRET=

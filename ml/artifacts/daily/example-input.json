@@ -1,0 +1,14 @@
+{
+  "_description": "Historical inference example; not a live forecast.",
+  "origin": "2026-08-15 08:00:00+00:00",
+  "observation_date": "2026-08-15 00:00:00+00:00",
+  "frequency": "daily",
+  "anchor_price": 161.111,
+  "x_b7h_change_14": 0.2854970493876649,
+  "x_b7h_change_28": 2.3604925338783715,
+  "x_b7h_change_7": 3.9107286832853703,
+  "x_bz_change_7": 2.065205864589288,
+  "x_pump_change_1": -0.0700000000000216,
+  "x_pump_slope_long": 0.0588571428571417,
+  "x_pump_slope_short": -0.0800000000000011
+}

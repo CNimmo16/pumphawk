@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - services/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  workerd: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - "@better-auth/core@1.7.5"
+  - "@better-auth/drizzle-adapter@1.7.5"
+  - "@better-auth/kysely-adapter@1.7.5"
+  - "@better-auth/memory-adapter@1.7.5"
+  - "@better-auth/mongo-adapter@1.7.5"
+  - "@better-auth/prisma-adapter@1.7.5"
+  - "@better-auth/telemetry@1.7.5"
+  - "@cloudflare/vite-plugin@1.54.10"
+  - "@cloudflare/workerd-darwin-64@1.20260915.1"
+  - "@cloudflare/workerd-darwin-arm64@1.20260915.1"
+  - "@cloudflare/workerd-linux-64@1.20260915.1"
+  - "@cloudflare/workerd-linux-arm64@1.20260915.1"
+  - "@cloudflare/workerd-windows-64@1.20260915.1"
+  - better-auth@1.7.5
+  - miniflare@5.20260915.0-alpha
+  - workerd@1.20260915.1
+  - wrangler@4.132.0
+
+verifyDepsBeforeRun: false

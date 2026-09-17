@@ -1,0 +1,147 @@
+{
+  "source": "load_frame('daily'); no sealed access",
+  "python": "3.12.14",
+  "eligible_frame_sha256": "6eba6793be8a519be4e6998f46a72280cb70d7997bd0224b3dc28eeb93434e25",
+  "origins": 133,
+  "start": "2026-03-08 08:00:00+00:00",
+  "end": "2026-07-18 08:00:00+00:00",
+  "last_target_availability": "2026-07-19 08:00:00+00:00",
+  "station_count_min": 6173,
+  "station_count_max": 7877,
+  "anchor_price_min": 137.476,
+  "anchor_price_max": 159.457,
+  "missing_feature_fraction": {
+    "x_fx": 0.0,
+    "x_fx_change_1": 0.0,
+    "x_fx_change_7": 0.0,
+    "x_fx_change_28": 0.0,
+    "x_b7h_missing": 0.0,
+    "x_bz_missing": 0.0,
+    "x_crack_proxy": 0.0,
+    "x_b7h_level": 0.0,
+    "x_b7h_age": 0.0,
+    "x_b7h_change_1": 0.0,
+    "x_b7h_change_3": 0.0,
+    "x_b7h_change_7": 0.0,
+    "x_b7h_change_14": 0.0,
+    "x_b7h_change_28": 0.0,
+    "x_b7h_curve": 0.0,
+    "x_bz_level": 0.0,
+    "x_bz_age": 0.0,
+    "x_bz_change_1": 0.0,
+    "x_bz_change_3": 0.0,
+    "x_bz_change_7": 0.0,
+    "x_bz_change_14": 0.0,
+    "x_bz_change_28": 0.0,
+    "x_bz_curve": 0.0,
+    "x_pump_level": 0.0,
+    "x_month_sin": 0.0,
+    "x_month_cos": 0.0,
+    "x_pump_change_1": 0.0,
+    "x_pump_change_3": 0.0,
+    "x_pump_change_7": 0.0,
+    "x_pump_change_14": 0.0,
+    "x_pump_change_28": 0.0,
+    "x_pump_slope_short": 0.0,
+    "x_pump_slope_long": 0.0,
+    "x_pump_volatility": 0.0,
+    "x_weekday_sin": 0.0,
+    "x_weekday_cos": 0.0,
+    "x_station_count": 0.0,
+    "x_station_count_change_7": 0.0,
+    "x_cohort_gap": 0.0
+  },
+  "folds": {
+    "2026-05-15": {
+      "1": {
+        "train": 67,
+        "evaluation": 21
+      },
+      "3": {
+        "train": 65,
+        "evaluation": 21
+      },
+      "7": {
+        "train": 61,
+        "evaluation": 21
+      },
+      "14": {
+        "train": 54,
+        "evaluation": 21
+      }
+    },
+    "2026-06-05": {
+      "1": {
+        "train": 88,
+        "evaluation": 21
+      },
+      "3": {
+        "train": 86,
+        "evaluation": 21
+      },
+      "7": {
+        "train": 82,
+        "evaluation": 21
+      },
+      "14": {
+        "train": 75,
+        "evaluation": 21
+      }
+    },
+    "2026-06-26": {
+      "1": {
+        "train": 109,
+        "evaluation": 23
+      },
+      "3": {
+        "train": 107,
+        "evaluation": 21
+      },
+      "7": {
+        "train": 103,
+        "evaluation": 17
+      },
+      "14": {
+        "train": 96,
+        "evaluation": 10
+      }
+    }
+  },
+  "observed_eligible_months": {
+    "2026-03": {
+      "origins": 24,
+      "first_anchor": 137.476,
+      "last_anchor": 152.707,
+      "first_stations": 6173,
+      "last_stations": 7392
+    },
+    "2026-04": {
+      "origins": 30,
+      "first_anchor": 153.622,
+      "last_anchor": 156.956,
+      "first_stations": 7407,
+      "last_stations": 7545
+    },
+    "2026-05": {
+      "origins": 31,
+      "first_anchor": 156.957,
+      "last_anchor": 159.329,
+      "first_stations": 7577,
+      "last_stations": 7786
+    },
+    "2026-06": {
+      "origins": 30,
+      "first_anchor": 159.316,
+      "last_anchor": 151.388,
+      "first_stations": 7786,
+      "last_stations": 7843
+    },
+    "2026-07": {
+      "origins": 18,
+      "first_anchor": 151.126,
+      "last_anchor": 153.112,
+      "first_stations": 7847,
+      "last_stations": 7877
+    }
+  }
+}

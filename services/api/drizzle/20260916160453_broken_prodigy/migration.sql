@@ -1,0 +1,1 @@
+ALTER TABLE "national_price" ADD COLUMN "source" text DEFAULT 'fuel-finder' NOT NULL;

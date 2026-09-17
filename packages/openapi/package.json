@@ -1,0 +1,20 @@
+{
+  "name": "@pump-hawk/openapi",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.gen.ts",
+    "./sdk": "./src/sdk.gen.ts",
+    "./types": "./src/types.gen.ts",
+    "./react-query": "./src/@tanstack/react-query.gen.ts"
+  },
+  "scripts": {
+    "generate": "openapi-ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.95.2"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0"
+  }
+}
