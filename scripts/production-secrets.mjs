@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 const names = [
+  "DATABASE_URL",
   "BETTER_AUTH_SECRET",
   "INGEST_API_KEY",
   "DATABENTO_API_KEY",

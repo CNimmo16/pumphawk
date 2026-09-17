@@ -30,7 +30,7 @@ export function readConfig(env: Env): Config {
     authUrl: env.BETTER_AUTH_URL,
     authSecret: env.BETTER_AUTH_SECRET,
     ingestApiKey: env.INGEST_API_KEY,
-    databaseUrl: env.HYPERDRIVE.connectionString,
+    databaseUrl: env.DATABASE_URL,
     marketDataMode: env.MARKET_DATA_MODE,
     marketSource: env.MARKET_SOURCE,
     databentoApiKey: env.DATABENTO_API_KEY,

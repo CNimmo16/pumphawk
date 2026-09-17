@@ -6,30 +6,36 @@ Pushes to `main` run `.github/workflows/production.yml`. Pull requests run valid
 
 Repository: `CNimmo16/pumphawk`. The deployment job uses the GitHub environment `production`. Add production secrets and variables under **Settings → Environments → production**. Repository-level values remain available as fallbacks; environment-level values take precedence.
 
-| Encrypted secret            | Purpose                                                                     |
-| --------------------------- | --------------------------------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`      | Deploy Workers and manage the application's Hyperdrive connection           |
-| `DATABASE_URL`              | Direct reachable PostgreSQL connection for migrations and history bootstrap |
-| `BETTER_AUTH_SECRET`        | Production session signing; at least 32 random characters                   |
-| `INGEST_API_KEY`            | Protected collection/bootstrap endpoints; at least 24 random characters     |
-| `DATABENTO_API_KEY`         | Existing licensed B7H and BZ historical access                              |
-| `FUEL_FINDER_CLIENT_ID`     | Government Fuel Finder client                                               |
-| `FUEL_FINDER_CLIENT_SECRET` | Government Fuel Finder credential                                           |
+| Encrypted secret            | Purpose                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`      | Deploy Workers                                                                        |
+| `DATABASE_URL`              | Neon pooled PostgreSQL URI (hostname contains `-pooler`) for the Worker and bootstrap |
+| `DIRECT_DATABASE_URL`       | Neon direct PostgreSQL URI for migrations; same branch/database, pooling disabled     |
+| `BETTER_AUTH_SECRET`        | Production session signing; at least 32 random characters                             |
+| `INGEST_API_KEY`            | Protected collection/bootstrap endpoints; at least 24 random characters               |
+| `DATABENTO_API_KEY`         | Existing licensed B7H and BZ historical access                                        |
+| `FUEL_FINDER_CLIENT_ID`     | Government Fuel Finder client                                                         |
+| `FUEL_FINDER_CLIENT_SECRET` | Government Fuel Finder credential                                                     |
 
-Provider and authentication values are uploaded as API Worker secrets through a temporary private file which is deleted immediately afterward. The database password is sent only to GitHub's encrypted secret store, PostgreSQL and the configured Cloudflare Hyperdrive origin. It is never placed in a Worker variable or committed config. Never put secret values in workflow YAML or logs.
+Provider and authentication values are uploaded as API Worker secrets through a temporary private file which is deleted immediately afterward. The pooled database URL is uploaded as a Worker secret. The direct migration URL stays in GitHub Actions. It is never placed in a Worker variable or committed config. Never put secret values in workflow YAML or logs.
 
 Optional repository variables:
 
 - `CLOUDFLARE_ACCOUNT_ID`: recommended; required if the token cannot discover exactly one account.
-- `HYPERDRIVE_ID`: an existing connection with query caching **disabled**. Without it, the workflow finds or creates `pump-hawk-production` using `DATABASE_URL`.
 - `APP_ORIGIN`: HTTPS web origin. Defaults to `https://pump-hawk-web.<account-subdomain>.workers.dev`. A custom origin must already be routed to the web Worker.
 
-The token needs Workers Scripts edit and access to the account/subdomain and Hyperdrive APIs used by `scripts/production-config.mjs`. Restrict it to the intended account. The account must have a workers.dev subdomain. The PostgreSQL origin must accept Cloudflare connections; local Docker Postgres is not reachable by deployed Workers.
+The token needs Workers Scripts edit and access to the account/subdomain APIs used by `scripts/production-config.mjs`. Restrict it to the intended account. The account must have a workers.dev subdomain. The PostgreSQL origin must accept Cloudflare connections; local Docker Postgres is not reachable by deployed Workers.
+
+## Neon connections
+
+In Neon’s **Connect** dialog, select the production branch, database and role. Copy the URI with **Connection pooling** enabled into `DATABASE_URL`; switch pooling off and copy the direct URI into `DIRECT_DATABASE_URL`. Preserve Neon’s TLS parameters. Both URLs must target the same database and branch. The migration role needs permission to create schemas, tables and indexes.
+
+The existing Postgres.js driver connects over TCP with `nodejs_compat`; Drizzle transactions and v2 queries are unchanged. Prepared statements are disabled for transaction-pool compatibility, and connections are disposed at the end of each request/job. Local migrations fall back to `DATABASE_URL` when no direct URL is set.
 
 ## Deployment sequence
 
-1. Resolve the account, origin and Hyperdrive ID; refuse localhost database URLs and query caching.
-2. Generate the ignored `services/api/wrangler.production.json` with production origins, live-data mode and actual Hyperdrive binding.
+1. Resolve the account and origin; validate both production database URLs and refuse localhost.
+2. Generate the ignored `services/api/wrangler.production.json` with production origins and live-data mode.
 3. Run forward database migrations and idempotently import genuine daily/weekly history and observed-station state. No user accounts or station selections are replaced.
 4. Deploy `pump-hawk-api`, upload its secrets, build/deploy `pump-hawk-web` with the API service binding.
 5. Check the public page and API health; bootstrap daily market and hourly station collection, refresh models, then require `daily-ridge` and `weekly-huber` responses from the two production endpoints. A heuristic fallback does not pass this smoke check.

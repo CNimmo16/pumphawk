@@ -57,9 +57,9 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
       APP_ORIGIN: ${{ vars.APP_ORIGIN }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
       WRANGLER_SEND_METRICS: "false"
     steps:
       - uses: actions/checkout@v7

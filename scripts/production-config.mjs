@@ -39,57 +39,24 @@ const origin =
   `https://pump-hawk-web.${domain.subdomain}.workers.dev`;
 if (new URL(origin).protocol !== "https:" || new URL(origin).origin !== origin)
   throw new Error("APP_ORIGIN must be an HTTPS origin without a path.");
-const connection = process.env.DATABASE_URL;
-if (!connection)
-  throw new Error(
-    "Add the GitHub secret DATABASE_URL for reachable production PostgreSQL. Local Docker Postgres cannot serve deployed Workers.",
-  );
-const db = new URL(connection);
-if (
-  !["postgres:", "postgresql:"].includes(db.protocol) ||
-  ["localhost", "127.0.0.1", "::1", "[::1]"].includes(db.hostname)
-)
-  throw new Error(
-    "DATABASE_URL must point to reachable production PostgreSQL.",
-  );
-let hyperdrive = process.env.HYPERDRIVE_ID;
-if (!hyperdrive) {
-  const configs = await api(`/accounts/${account}/hyperdrive/configs`);
-  hyperdrive = configs.find((c) => c.name === "pump-hawk-production")?.id;
-  if (!hyperdrive) {
-    const created = await api(`/accounts/${account}/hyperdrive/configs`, {
-      method: "POST",
-      body: JSON.stringify({
-        name: "pump-hawk-production",
-        origin: {
-          scheme: "postgres",
-          host: db.hostname,
-          port: Number(db.port || 5432),
-          database: decodeURIComponent(db.pathname.slice(1)),
-          user: decodeURIComponent(db.username),
-          password: decodeURIComponent(db.password),
-        },
-        caching: { disabled: true },
-      }),
-    });
-    hyperdrive = created.id;
+for (const name of ["DATABASE_URL", "DIRECT_DATABASE_URL"]) {
+  const connection = process.env[name];
+  if (!connection)
+    throw new Error(
+      `Add GitHub production environment secret ${name}. Use Neon's pooled URL for DATABASE_URL and its direct URL for DIRECT_DATABASE_URL.`,
+    );
+  let db;
+  try {
+    db = new URL(connection);
+  } catch {
+    throw new Error(`${name} must be a PostgreSQL URI.`);
   }
+  if (
+    !["postgres:", "postgresql:"].includes(db.protocol) ||
+    ["localhost", "127.0.0.1", "::1", "[::1]"].includes(db.hostname)
+  )
+    throw new Error(`${name} must point to reachable production PostgreSQL.`);
 }
-const configuration = await api(
-  `/accounts/${account}/hyperdrive/configs/${hyperdrive}`,
-);
-if (
-  configuration.origin?.host !== db.hostname ||
-  Number(configuration.origin?.port) !== Number(db.port || 5432) ||
-  configuration.origin?.database !== decodeURIComponent(db.pathname.slice(1))
-)
-  throw new Error(
-    "HYPERDRIVE_ID and DATABASE_URL must refer to the same production database.",
-  );
-if (configuration.caching?.disabled !== true)
-  throw new Error(
-    "Disable query caching on the application Hyperdrive connection before deployment.",
-  );
 const config = {
   name: "pump-hawk-api",
   account_id: account,
@@ -105,7 +72,6 @@ const config = {
     MARKET_DATA_MODE: "live",
     MARKET_SOURCE: "provider",
   },
-  hyperdrive: [{ binding: "HYPERDRIVE", id: hyperdrive }],
   triggers: { crons: ["0 7 * * *", "0 8 * * *", "5 8 * * *", "10 * * * *"] },
 };
 await writeFile(
@@ -120,6 +86,6 @@ if (process.env.GITHUB_ENV)
 if (process.env.GITHUB_STEP_SUMMARY)
   await appendFile(
     process.env.GITHUB_STEP_SUMMARY,
-    `Production origin: ${origin}\n\nHyperdrive: ${hyperdrive}\n`,
+    `Production origin: ${origin}\n`,
   );
 console.log(`Prepared production configuration for ${origin}`);

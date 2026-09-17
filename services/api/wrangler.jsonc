@@ -13,13 +13,6 @@
     "MARKET_DATA_MODE": "live",
     "MARKET_SOURCE": "provider",
   },
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "00000000000000000000000000000000",
-      "localConnectionString": "postgres://pumphawk:pumphawk@127.0.0.1:55435/pumphawk",
-    },
-  ],
   "triggers": {
     "crons": ["0 7 * * *", "0 8 * * *", "5 8 * * *", "10 * * * *"],
   },

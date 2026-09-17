@@ -168,4 +168,4 @@ Integration tests migrate/reset only the dedicated `pumphawk_test` database. Cus
 
 The [CI/deployment workflow](.github/workflows/production.yml) runs generated-contract checks, TypeScript, unit tests, PostgreSQL integration tests and Worker builds. Main-branch deployments migrate PostgreSQL, import genuine history, deploy the API and web Workers, bootstrap feeds and verify that both model endpoints are live.
 
-See [PRODUCTION.md](PRODUCTION.md) for required GitHub secrets, account/Hyperdrive configuration, smoke checks and rollback. Production uses reachable PostgreSQL via Hyperdrive with query caching disabled. The local all-zero Hyperdrive ID is never used for deployment.
+See [PRODUCTION.md](PRODUCTION.md) for required GitHub secrets, Neon connection settings, smoke checks and rollback. Production uses Neon’s pooled `DATABASE_URL` as a Worker secret and `DIRECT_DATABASE_URL` for migrations. Local development uses Docker PostgreSQL through `.dev.vars`.
