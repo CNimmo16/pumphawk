@@ -57,6 +57,22 @@ for (const name of ["DATABASE_URL", "DIRECT_DATABASE_URL"]) {
   )
     throw new Error(`${name} must point to reachable production PostgreSQL.`);
 }
+if (
+  Boolean(process.env.POSTHOG_PROJECT_TOKEN) !==
+  Boolean(process.env.POSTHOG_HOST)
+)
+  throw new Error(
+    "Set both POSTHOG_PROJECT_TOKEN and POSTHOG_HOST, or neither.",
+  );
+if (
+  process.env.POSTHOG_HOST &&
+  !["https://eu.i.posthog.com", "https://us.i.posthog.com"].includes(
+    process.env.POSTHOG_HOST,
+  )
+)
+  throw new Error(
+    "POSTHOG_HOST must be the EU or US PostHog ingestion origin.",
+  );
 const config = {
   name: "pump-hawk-api",
   account_id: account,
@@ -71,6 +87,9 @@ const config = {
     BETTER_AUTH_URL: origin,
     MARKET_DATA_MODE: "live",
     MARKET_SOURCE: "provider",
+    POSTHOG_PROJECT_TOKEN: process.env.POSTHOG_PROJECT_TOKEN || "",
+    POSTHOG_HOST: process.env.POSTHOG_HOST || "",
+    RELEASE: process.env.GITHUB_SHA || "unknown",
   },
   triggers: { crons: ["0 7 * * *", "0 8 * * *", "5 8 * * *", "10 * * * *"] },
 };

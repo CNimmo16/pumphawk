@@ -1,15 +1,18 @@
 import { isAlertHour } from "./alerts/alert.service";
 import { createApp } from "./app/app";
 import { readConfig } from "./app/config";
-import { buildInjector } from "./app/injector";
+import { buildInjector, type AppInjector } from "./app/injector";
+import { reportError } from "./lib/telemetry/report";
 const app = createApp();
 export default {
   fetch: app.fetch,
   async scheduled(event, env, ctx) {
-    const injector = buildInjector(readConfig(env));
+    let injector: AppInjector | undefined;
     ctx.waitUntil(
       (async () => {
         try {
+          injector = buildInjector(readConfig(env));
+          const activeInjector = injector;
           const service = injector.resolve("syncService");
           if (event.cron === "10 * * * *") {
             const result = await service.hourly();
@@ -24,10 +27,10 @@ export default {
               const results = await Promise.allSettled([
                 data
                   .snapshot()
-                  .then(() => injector.resolve("modelService").daily()),
+                  .then(() => activeInjector.resolve("modelService").daily()),
                 data
                   .weekly()
-                  .then(() => injector.resolve("modelService").weekly()),
+                  .then(() => activeInjector.resolve("modelService").weekly()),
               ]);
               const failures = results.filter((r) => r.status === "rejected");
               if (failures.length) {
@@ -37,7 +40,9 @@ export default {
                     failures: failures.length,
                   }),
                 );
-                throw new Error("Model refresh incomplete");
+                throw new Error("Model refresh incomplete", {
+                  cause: failures[0]?.reason,
+                });
               }
             }
             // Preserve existing opt-in SMS stub behaviour; only its dashboard card was removed.
@@ -48,8 +53,18 @@ export default {
               );
             }
           }
+        } catch (error) {
+          await reportError(
+            error,
+            env,
+            `scheduled:${event.cron}`,
+            Object.values(env).filter(
+              (v): v is string => typeof v === "string" && v.length > 12,
+            ),
+          );
+          throw error;
         } finally {
-          await injector.dispose();
+          await injector?.dispose();
         }
       })(),
     );

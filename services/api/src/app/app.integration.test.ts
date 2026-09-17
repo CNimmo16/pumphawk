@@ -490,18 +490,38 @@ describe.sequential(
         ).mockImplementation(fx);
       }
       try {
-        const results = await Promise.all([
+        const results = await Promise.allSettled([
           a.resolve("syncService").daily(),
           b.resolve("syncService").daily(),
         ]);
         expect(daily).toHaveBeenCalledTimes(1);
-        expect(results.filter((r) => r.skipped)).toHaveLength(1);
+        expect(
+          results.filter((r) => r.status === "fulfilled" && !r.value.skipped),
+        ).toHaveLength(1);
         expect((await a.resolve("syncService").daily()).skipped).toBe(true);
         expect(daily).toHaveBeenCalledTimes(1);
         expect(await db.query.futuresSettlement.findMany()).toHaveLength(1);
       } finally {
         await a.dispose();
         await b.dispose();
+      }
+    });
+    it("retries failed daily jobs at most three times without reporting success", async () => {
+      const i = buildInjector(config, () => new Date(+now + 86400000));
+      const daily = vi
+        .spyOn(i.resolve("databentoService"), "daily")
+        .mockRejectedValue(new Error("provider unavailable"));
+      try {
+        for (let attempt = 0; attempt < 3; attempt++)
+          await expect(i.resolve("syncService").daily()).rejects.toThrow(
+            "provider unavailable",
+          );
+        await expect(i.resolve("syncService").daily()).rejects.toMatchObject({
+          code: "SYNC_UNAVAILABLE",
+        });
+        expect(daily).toHaveBeenCalledTimes(3);
+      } finally {
+        await i.dispose();
       }
     });
     it("stores tracked-station hourly observations once and never duplicates them across users", async () => {
@@ -581,14 +601,12 @@ describe.sequential(
           ),
           event("c", "2026-09-18T06:00:00Z", null),
         ]);
-      await db
-        .insert(dataJob)
-        .values({
-          key: "fuel-finder:model-test",
-          status: "complete",
-          startedAt: received,
-          finishedAt: received,
-        });
+      await db.insert(dataJob).values({
+        key: "fuel-finder:model-test",
+        status: "complete",
+        startedAt: received,
+        finishedAt: received,
+      });
       const i = buildInjector(config, () => new Date("2026-09-18T08:05:00Z"));
       try {
         await i.resolve("modelDataService").snapshot();
@@ -619,56 +637,48 @@ describe.sequential(
             })
           )?.pricePence,
         ).toBe(155);
-        await db
-          .insert(modelPrice)
-          .values([
-            {
-              frequency: "daily",
-              date: "2026-09-04",
-              availableAt: new Date("2026-09-04T08:00:00Z"),
-              pricePence: 151,
-              source: "fuelcosts-archive",
-            },
-          ]);
+        await db.insert(modelPrice).values([
+          {
+            frequency: "daily",
+            date: "2026-09-04",
+            availableAt: new Date("2026-09-04T08:00:00Z"),
+            pricePence: 151,
+            source: "fuelcosts-archive",
+          },
+        ]);
         for (const product of ["B7H", "BZ"] as const)
-          await db
-            .insert(modelSettlementEvent)
-            .values(
-              [0, 7, 14, 28].map((lag) => ({
-                product,
-                symbol: product + "-test",
-                date: new Date(+cutoff - (lag + 1) * 86400000)
-                  .toISOString()
-                  .slice(0, 10),
-                publishedAt: new Date(+cutoff - 3600000),
-                expiresAt: new Date("2026-12-01T00:00:00Z"),
-                priceUsd: product === "B7H" ? 1000 - lag : 80 - lag / 10,
-              })),
-            );
-        await db
-          .insert(modelFxRate)
-          .values(
+          await db.insert(modelSettlementEvent).values(
             [0, 7, 14, 28].map((lag) => ({
+              product,
+              symbol: product + "-test",
               date: new Date(+cutoff - (lag + 1) * 86400000)
                 .toISOString()
                 .slice(0, 10),
-              availableAt: new Date(+cutoff - 3600000),
-              usdPerGbp: 1.3,
+              publishedAt: new Date(+cutoff - 3600000),
+              expiresAt: new Date("2026-12-01T00:00:00Z"),
+              priceUsd: product === "B7H" ? 1000 - lag : 80 - lag / 10,
             })),
           );
+        await db.insert(modelFxRate).values(
+          [0, 7, 14, 28].map((lag) => ({
+            date: new Date(+cutoff - (lag + 1) * 86400000)
+              .toISOString()
+              .slice(0, 10),
+            availableAt: new Date(+cutoff - 3600000),
+            usdPerGbp: 1.3,
+          })),
+        );
         const first = await i.resolve("modelService").daily();
         expect(first.model).toBe("daily-ridge");
         expect(first.points).toHaveLength(15);
-        await db
-          .insert(modelSettlementEvent)
-          .values({
-            product: "B7H",
-            symbol: "B7H-test",
-            date: "2026-09-17",
-            publishedAt: new Date("2026-09-18T07:59:00Z"),
-            expiresAt: new Date("2026-12-01T00:00:00Z"),
-            priceUsd: 2000,
-          });
+        await db.insert(modelSettlementEvent).values({
+          product: "B7H",
+          symbol: "B7H-test",
+          date: "2026-09-17",
+          publishedAt: new Date("2026-09-18T07:59:00Z"),
+          expiresAt: new Date("2026-12-01T00:00:00Z"),
+          priceUsd: 2000,
+        });
         expect(await i.resolve("modelService").daily()).toEqual(first);
         expect(await db.query.forecastRun.findMany()).toHaveLength(1);
       } finally {

@@ -38,9 +38,31 @@ export class SyncService {
     const [claim] = await this.store.db
       .insert(dataJob)
       .values({ key, status: "running", startedAt: this.clock() })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: dataJob.key,
+        set: {
+          status: "running",
+          startedAt: this.clock(),
+          finishedAt: null,
+          error: null,
+          attempts: sql`${dataJob.attempts} + 1`,
+        },
+        setWhere: sql`${dataJob.status} = 'failed' and ${dataJob.attempts} < 3`,
+      })
       .returning();
-    if (!claim) return { skipped: true, key };
+    if (!claim) {
+      const job = await this.store.db.query.dataJob.findFirst({
+        where: { key },
+      });
+      if (job?.status === "complete") return { skipped: true, key };
+      throw new AppError(
+        "SYNC_UNAVAILABLE",
+        job?.status === "running"
+          ? "This sync is already running."
+          : "Sync failed three times; inspect the logs before retrying on the next scheduled period.",
+        503,
+      );
+    }
     try {
       const result = await run();
       await this.store.db

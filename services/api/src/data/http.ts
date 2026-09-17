@@ -9,7 +9,8 @@ export async function providerText(
 ) {
   const response = await http(url, {
     ...init,
-    redirect: "error",
+    // Workers supports manual/follow only; reject redirects via the status check.
+    redirect: "manual",
     signal: AbortSignal.timeout(45_000),
   });
   if (!response.ok) {

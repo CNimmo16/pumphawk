@@ -52,3 +52,18 @@ On later deployments, successful daily/hourly collection slots are reused. Faile
 - SMS verification is still the existing database-backed stub. Production does not expose development OTPs; real phone signup needs a real SMS transport.
 
 Roll back a faulty Worker version with Wrangler or the Cloudflare dashboard, then rerun the deployment smoke checks. These database migrations are additive. Do not drop new tables during an application rollback or delete issued forecasts to make monitoring look better.
+
+## Error capture (PostHog)
+
+Set these **variables** in the GitHub `production` environment to enable error capture on the next deployment:
+
+- `POSTHOG_PROJECT_TOKEN`: the chosen project's public ingestion token (`phc_…`), **not** a personal API token.
+- `POSTHOG_HOST`: `https://eu.i.posthog.com` for EU or `https://us.i.posthog.com` for US; match the project's region.
+
+Both are optional together. Without them, errors remain in Cloudflare's structured logs. The workflow passes the token/host to the API Worker and the browser build and tags events with the Git commit. The browser token is public by design. No session replay, pageview analytics, person profiles, or click autocapture is enabled. Errors are sanitized, and browser event properties are restricted to an allowlist; request bodies, headers, user IDs, phone numbers, coordinates and SQL parameters are not attached.
+
+API failures and scheduled sync errors use a per-invocation PostHog client with bounded delivery time. Browser uncaught errors, rejected promises, React route-boundary errors and failed queries/mutations are captured. Source-map upload to PostHog and web Worker SSR error capture are not configured yet. Verify ingestion with a controlled error after selecting the project; integration is disabled until the variables are supplied.
+
+Provider requests use manual redirects, reject non-success statuses, and never forward credentials to a redirect target. Daily/hourly sync claims permit at most three attempts per period, only retry failed jobs, and never repeat a completed download. Running or exhausted jobs return `SYNC_UNAVAILABLE` rather than falsely reporting success. Inspect Cloudflare/PostHog before any manual recovery of exhausted/stuck jobs; retries can incur additional Databento download charges (each download remains cost-capped).
+
+SDK guidance: https://posthog.com/docs/libraries/cloudflare-workers and https://posthog.com/docs/error-tracking/installation/web.

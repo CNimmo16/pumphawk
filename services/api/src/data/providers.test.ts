@@ -29,6 +29,23 @@ const stat = {
   update_action: "1",
 };
 describe("provider normalization", () => {
+  it("rejects redirects without forwarding credentials using a Workers-compatible fetch mode", async () => {
+    const http = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      if (init?.redirect === "error")
+        throw new TypeError("Unsupported Workers redirect mode");
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://other.example" },
+      });
+    });
+    await expect(
+      providerText(http as HttpClient, "https://example.com", {
+        headers: { Authorization: "secret" },
+      }),
+    ).rejects.toThrow("HTTP 302");
+    expect(http).toHaveBeenCalledTimes(1);
+    expect(http.mock.calls[0]?.[1]?.redirect).toBe("manual");
+  });
   it("reads quoted CSV and preserves exact settlement display prices", () => {
     expect(parseCsv('a,b\r\n"a,b","quote ""yes"""\r\n')).toEqual([
       { a: "a,b", b: 'quote "yes"' },

@@ -1,4 +1,4 @@
-import { errorDiagnostic } from "../lib/telemetry/error";
+import { reportError } from "../lib/telemetry/report";
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { secureHeaders } from "hono/secure-headers";
@@ -169,7 +169,23 @@ export function createApp(
       await injector.dispose();
     }
   });
-  app.onError((error, c) => {
+  app.onError(async (error, c) => {
+    if (!(error instanceof AppError) || error.status >= 500) {
+      const pending = reportError(
+        error,
+        c.env ?? {},
+        c.req.routePath ?? "api",
+        Object.values(options.config ?? c.env ?? {}).filter(
+          (v): v is string => typeof v === "string" && v.length > 12,
+        ),
+      );
+      // Hono's Node test harness has no execution context.
+      try {
+        c.executionCtx.waitUntil(pending);
+      } catch {
+        await pending;
+      }
+    }
     if (error instanceof AppError)
       return c.json(
         { error: { code: error.code, message: error.message } },
@@ -185,18 +201,6 @@ export function createApp(
         },
         400,
       );
-    console.error(
-      JSON.stringify({
-        event: "request_failed",
-        path: c.req.path,
-        error: errorDiagnostic(
-          error,
-          Object.values(options.config ?? c.env ?? {}).filter(
-            (v): v is string => typeof v === "string" && v.length > 12,
-          ),
-        ),
-      }),
-    );
     return c.json(
       {
         error: {

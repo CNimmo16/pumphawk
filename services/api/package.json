@@ -19,22 +19,23 @@
     "data:bootstrap": "node --import tsx scripts/bootstrap-models.ts"
   },
   "dependencies": {
-    "@pump-hawk/contracts": "workspace:*",
     "@better-auth/drizzle-adapter": "1.7.5",
-    "better-auth": "1.7.5",
-    "@hono/zod-openapi": "^1.1.5",
     "@hono/swagger-ui": "^0.5.2",
-    "hono": "^4.12.0",
+    "@hono/zod-openapi": "^1.1.5",
+    "@pump-hawk/contracts": "workspace:*",
+    "better-auth": "1.7.5",
     "drizzle-orm": "1.0.0-rc.4",
+    "hono": "^4.12.0",
+    "libphonenumber-js": "^1.12.24",
     "postgres": "^3.4.8",
+    "posthog-node": "^5.52.4",
     "typed-inject": "^5.0.0",
-    "zod": "^4.3.5",
-    "libphonenumber-js": "^1.12.24"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "drizzle-kit": "1.0.0-rc.4",
     "dotenv": "^17.2.0",
+    "drizzle-kit": "1.0.0-rc.4",
     "tsx": "^4.20.3",
     "vitest": "^4.1.1",
     "wrangler": "4.132.0"

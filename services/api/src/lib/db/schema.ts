@@ -217,6 +217,7 @@ export const nationalPrice = pgTable("national_price", {
   observedAt: time("observed_at").notNull(),
 });
 export const dataJob = pgTable("data_job", {
+  attempts: integer("attempts").notNull().default(1),
   key: text("key").primaryKey(),
   status: text("status", { enum: ["running", "complete", "failed"] }).notNull(),
   startedAt: time("started_at").notNull(),

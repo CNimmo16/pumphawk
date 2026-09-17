@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@pump-hawk/contracts": "workspace:*",
     "@pump-hawk/openapi": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-router": "^1.168.4",
@@ -17,6 +18,7 @@
     "better-auth": "1.7.5",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
+    "posthog-js": "^1.433.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

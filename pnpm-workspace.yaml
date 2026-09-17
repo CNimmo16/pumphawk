@@ -6,6 +6,7 @@ allowBuilds:
   esbuild: true
   workerd: true
   sharp: true
+  core-js: false
 minimumReleaseAgeExclude:
   - "@better-auth/core@1.7.5"
   - "@better-auth/drizzle-adapter@1.7.5"
