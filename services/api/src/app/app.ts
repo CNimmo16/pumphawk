@@ -12,6 +12,7 @@ import {
   DriverInput,
   DriverSchema,
   ForecastSchema,
+  WeeklyOutlookSchema,
   DashboardSchema,
   RecommendationSchema,
   IngestSchema,
@@ -84,7 +85,7 @@ export const openApiDocument = {
     title: "Pump Hawk API",
     version: "0.1.0",
     description:
-      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Heuristic methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
+      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
   },
   servers: [{ url: "/" }],
   tags: [
@@ -587,7 +588,9 @@ export function createApp(
       summary: "Run daily market or hourly station ingestion",
       description:
         "Idempotent across Workers using Postgres job claims. Daily downloads run at most once per UTC day; hourly station collection runs at most once per UTC hour. Failed attempts remain recorded and retry next scheduled period.",
-      request: { params: z.object({ kind: z.enum(["daily", "hourly"]) }) },
+      request: {
+        params: z.object({ kind: z.enum(["daily", "hourly", "models"]) }),
+      },
       responses: {
         200: json(
           z
@@ -598,16 +601,62 @@ export function createApp(
         ...errors,
       },
     }),
-    async (c) =>
-      c.json(
+    async (c) => {
+      if (c.req.valid("param").kind === "models") {
+        const i = c.get("injector"),
+          data = i.resolve("modelDataService");
+        await data.weekly();
+        // On first deployment, archived genuine snapshots can precede the first
+        // local collection. Keep them until a complete pre-cutoff collection exists.
+        try {
+          await data.snapshot();
+        } catch (error) {
+          if (
+            !(error instanceof AppError) ||
+            error.code !== "SNAPSHOT_FEED_STALE"
+          )
+            throw error;
+        }
+        const daily = await i.resolve("modelService").daily();
+        const weekly = await i.resolve("modelService").weekly();
+        return c.json(
+          {
+            key: "models:" + daily.asOf,
+            skipped: false,
+            dailyModel: daily.model,
+            weeklyModel: weekly.model,
+          },
+          200,
+        );
+      }
+      return c.json(
         await c
           .get("injector")
           .resolve("syncService")
-          [c.req.valid("param").kind](),
+          [c.req.valid("param").kind as "daily" | "hourly"](),
         200,
-      ),
+      );
+    },
   );
   const authError = z.object({ code: z.string(), message: z.string() });
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/api/v1/forecast/weekly",
+      operationId: "getWeeklyOutlook",
+      tags: ["Market"],
+      summary: "Official sales-weighted UK weekly petrol outlook",
+      responses: {
+        200: json(
+          WeeklyOutlookSchema,
+          "Next two official weekly observations; never a daily forecast",
+        ),
+        503: errors[503],
+      },
+    }),
+    async (c) =>
+      c.json(await c.get("injector").resolve("modelService").weekly(), 200),
+  );
   for (const [path, id, schema, summary] of [
     [
       "/api/auth/phone-number/send-otp",

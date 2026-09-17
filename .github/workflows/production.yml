@@ -1,0 +1,102 @@
+name: CI and production deployment
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pumphawk
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: pumphawk_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U pumphawk -d pumphawk_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgres://pumphawk:ci-only-password@127.0.0.1:5432/pumphawk_test
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm openapi
+      - run: git diff --exit-code -- packages/openapi
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm test:integration
+      - run: pnpm build
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: pumphawk-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
+      APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Resolve production account, database and origin
+        run: node scripts/production-config.mjs
+      - name: Apply database migrations and genuine history
+        run: |
+          pnpm db:migrate
+          pnpm data:bootstrap
+      - name: Deploy API Worker
+        run: pnpm --filter @pump-hawk/api exec wrangler deploy --config wrangler.production.json
+      - name: Configure API secrets
+        run: node scripts/production-secrets.mjs
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          INGEST_API_KEY: ${{ secrets.INGEST_API_KEY }}
+          DATABENTO_API_KEY: ${{ secrets.DATABENTO_API_KEY }}
+          FUEL_FINDER_CLIENT_ID: ${{ secrets.FUEL_FINDER_CLIENT_ID }}
+          FUEL_FINDER_CLIENT_SECRET: ${{ secrets.FUEL_FINDER_CLIENT_SECRET }}
+      - name: Build and deploy web Worker
+        run: |
+          pnpm --filter @pump-hawk/web build
+          pnpm --filter @pump-hawk/web exec wrangler deploy
+      - name: Verify deployed application
+        run: |
+          curl --fail --retry 6 --retry-all-errors --retry-delay 10 "$PRODUCTION_ORIGIN/api/health"
+          curl --fail --retry 6 --retry-all-errors --retry-delay 10 "$PRODUCTION_ORIGIN/" --output /dev/null
+      - name: Bootstrap feeds and verify both production models
+        run: node scripts/production-smoke.mjs
+        env:
+          INGEST_API_KEY: ${{ secrets.INGEST_API_KEY }}

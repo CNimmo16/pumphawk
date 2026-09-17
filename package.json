@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "data:sync": "pnpm --filter @pump-hawk/api data:sync",
-    "data:watch": "pnpm --filter @pump-hawk/api data:watch"
+    "data:watch": "pnpm --filter @pump-hawk/api data:watch",
+    "data:bootstrap": "pnpm --filter @pump-hawk/api data:bootstrap"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

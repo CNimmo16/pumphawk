@@ -1,0 +1,1465 @@
+{
+  "provenance": "FuelCosts archive 0549348f44d917e0fc94dead6a64677598736921 and DESNZ, acquired 2026-09-16; genuine observations, never development samples.",
+  "prices": [
+    {
+      "frequency": "daily",
+      "date": "2026-06-18",
+      "availableAt": "2026-06-18T08:00:00+00:00",
+      "pricePence": 154.731,
+      "stationCount": 7827,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-19",
+      "availableAt": "2026-06-19T08:00:00+00:00",
+      "pricePence": 154.431,
+      "stationCount": 7828,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-20",
+      "availableAt": "2026-06-20T08:00:00+00:00",
+      "pricePence": 153.947,
+      "stationCount": 7830,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-21",
+      "availableAt": "2026-06-21T08:00:00+00:00",
+      "pricePence": 153.775,
+      "stationCount": 7830,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-22",
+      "availableAt": "2026-06-22T08:00:00+00:00",
+      "pricePence": 153.676,
+      "stationCount": 7830,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-23",
+      "availableAt": "2026-06-23T08:00:00+00:00",
+      "pricePence": 153.171,
+      "stationCount": 7831,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-24",
+      "availableAt": "2026-06-24T08:00:00+00:00",
+      "pricePence": 152.682,
+      "stationCount": 7832,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-25",
+      "availableAt": "2026-06-25T08:00:00+00:00",
+      "pricePence": 152.32,
+      "stationCount": 7833,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-26",
+      "availableAt": "2026-06-26T08:00:00+00:00",
+      "pricePence": 151.982,
+      "stationCount": 7837,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-27",
+      "availableAt": "2026-06-27T08:00:00+00:00",
+      "pricePence": 151.728,
+      "stationCount": 7841,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-28",
+      "availableAt": "2026-06-28T08:00:00+00:00",
+      "pricePence": 151.654,
+      "stationCount": 7841,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-29",
+      "availableAt": "2026-06-29T08:00:00+00:00",
+      "pricePence": 151.619,
+      "stationCount": 7841,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-06-30",
+      "availableAt": "2026-06-30T08:00:00+00:00",
+      "pricePence": 151.388,
+      "stationCount": 7843,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-01",
+      "availableAt": "2026-07-01T08:00:00+00:00",
+      "pricePence": 151.126,
+      "stationCount": 7847,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-02",
+      "availableAt": "2026-07-02T08:00:00+00:00",
+      "pricePence": 150.952,
+      "stationCount": 7848,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-03",
+      "availableAt": "2026-07-03T08:00:00+00:00",
+      "pricePence": 150.806,
+      "stationCount": 7853,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-04",
+      "availableAt": "2026-07-04T08:00:00+00:00",
+      "pricePence": 150.608,
+      "stationCount": 7855,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-05",
+      "availableAt": "2026-07-05T08:00:00+00:00",
+      "pricePence": 150.583,
+      "stationCount": 7856,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-06",
+      "availableAt": "2026-07-06T08:00:00+00:00",
+      "pricePence": 150.58,
+      "stationCount": 7856,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-07",
+      "availableAt": "2026-07-07T08:00:00+00:00",
+      "pricePence": 150.682,
+      "stationCount": 7858,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-08",
+      "availableAt": "2026-07-08T08:00:00+00:00",
+      "pricePence": 150.672,
+      "stationCount": 7858,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-09",
+      "availableAt": "2026-07-09T08:00:00+00:00",
+      "pricePence": 150.702,
+      "stationCount": 7859,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-10",
+      "availableAt": "2026-07-10T08:00:00+00:00",
+      "pricePence": 150.861,
+      "stationCount": 7861,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-11",
+      "availableAt": "2026-07-11T08:00:00+00:00",
+      "pricePence": 151.079,
+      "stationCount": 7862,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-12",
+      "availableAt": "2026-07-12T08:00:00+00:00",
+      "pricePence": 151.117,
+      "stationCount": 7864,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-13",
+      "availableAt": "2026-07-13T08:00:00+00:00",
+      "pricePence": 151.166,
+      "stationCount": 7864,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-14",
+      "availableAt": "2026-07-14T08:00:00+00:00",
+      "pricePence": 151.331,
+      "stationCount": 7869,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-15",
+      "availableAt": "2026-07-15T08:00:00+00:00",
+      "pricePence": 151.73,
+      "stationCount": 7871,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-16",
+      "availableAt": "2026-07-16T08:00:00+00:00",
+      "pricePence": 152.145,
+      "stationCount": 7873,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-17",
+      "availableAt": "2026-07-17T08:00:00+00:00",
+      "pricePence": 152.484,
+      "stationCount": 7875,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-18",
+      "availableAt": "2026-07-18T08:00:00+00:00",
+      "pricePence": 153.112,
+      "stationCount": 7877,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-19",
+      "availableAt": "2026-07-19T08:00:00+00:00",
+      "pricePence": 153.296,
+      "stationCount": 7877,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-20",
+      "availableAt": "2026-07-20T08:00:00+00:00",
+      "pricePence": 153.402,
+      "stationCount": 7877,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-21",
+      "availableAt": "2026-07-21T08:00:00+00:00",
+      "pricePence": 154.102,
+      "stationCount": 7881,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-22",
+      "availableAt": "2026-07-22T08:00:00+00:00",
+      "pricePence": 154.751,
+      "stationCount": 7883,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-23",
+      "availableAt": "2026-07-23T08:00:00+00:00",
+      "pricePence": 155.469,
+      "stationCount": 7887,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-24",
+      "availableAt": "2026-07-24T08:00:00+00:00",
+      "pricePence": 156.051,
+      "stationCount": 7892,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-25",
+      "availableAt": "2026-07-25T08:00:00+00:00",
+      "pricePence": 157.079,
+      "stationCount": 7893,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-26",
+      "availableAt": "2026-07-26T08:00:00+00:00",
+      "pricePence": 157.411,
+      "stationCount": 7895,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-27",
+      "availableAt": "2026-07-27T08:00:00+00:00",
+      "pricePence": 157.669,
+      "stationCount": 7896,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-28",
+      "availableAt": "2026-07-28T08:00:00+00:00",
+      "pricePence": 158.4,
+      "stationCount": 7900,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-29",
+      "availableAt": "2026-07-29T08:00:00+00:00",
+      "pricePence": 158.896,
+      "stationCount": 7903,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-30",
+      "availableAt": "2026-07-30T08:00:00+00:00",
+      "pricePence": 159.403,
+      "stationCount": 7906,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-07-31",
+      "availableAt": "2026-07-31T08:00:00+00:00",
+      "pricePence": 159.803,
+      "stationCount": 7912,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-01",
+      "availableAt": "2026-08-01T08:00:00+00:00",
+      "pricePence": 160.287,
+      "stationCount": 7916,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-02",
+      "availableAt": "2026-08-02T08:00:00+00:00",
+      "pricePence": 160.499,
+      "stationCount": 7917,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-03",
+      "availableAt": "2026-08-03T08:00:00+00:00",
+      "pricePence": 160.698,
+      "stationCount": 7919,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-04",
+      "availableAt": "2026-08-04T08:00:00+00:00",
+      "pricePence": 161.146,
+      "stationCount": 7919,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-05",
+      "availableAt": "2026-08-05T08:00:00+00:00",
+      "pricePence": 161.329,
+      "stationCount": 7921,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-06",
+      "availableAt": "2026-08-06T08:00:00+00:00",
+      "pricePence": 161.391,
+      "stationCount": 7924,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-07",
+      "availableAt": "2026-08-07T08:00:00+00:00",
+      "pricePence": 161.504,
+      "stationCount": 7924,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-08",
+      "availableAt": "2026-08-08T08:00:00+00:00",
+      "pricePence": 161.523,
+      "stationCount": 7925,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-09",
+      "availableAt": "2026-08-09T08:00:00+00:00",
+      "pricePence": 161.532,
+      "stationCount": 7926,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-10",
+      "availableAt": "2026-08-10T08:00:00+00:00",
+      "pricePence": 161.511,
+      "stationCount": 7927,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-11",
+      "availableAt": "2026-08-11T08:00:00+00:00",
+      "pricePence": 161.376,
+      "stationCount": 7927,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-12",
+      "availableAt": "2026-08-12T08:00:00+00:00",
+      "pricePence": 161.332,
+      "stationCount": 7930,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-13",
+      "availableAt": "2026-08-13T08:00:00+00:00",
+      "pricePence": 161.287,
+      "stationCount": 7931,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-14",
+      "availableAt": "2026-08-14T08:00:00+00:00",
+      "pricePence": 161.181,
+      "stationCount": 7933,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-15",
+      "availableAt": "2026-08-15T08:00:00+00:00",
+      "pricePence": 161.111,
+      "stationCount": 7940,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-16",
+      "availableAt": "2026-08-16T08:00:00+00:00",
+      "pricePence": 161.104,
+      "stationCount": 7941,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-17",
+      "availableAt": "2026-08-17T08:00:00+00:00",
+      "pricePence": 161.11,
+      "stationCount": 7942,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-18",
+      "availableAt": "2026-08-18T08:00:00+00:00",
+      "pricePence": 161.114,
+      "stationCount": 7950,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-19",
+      "availableAt": "2026-08-19T08:00:00+00:00",
+      "pricePence": 161.103,
+      "stationCount": 7953,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-20",
+      "availableAt": "2026-08-20T08:00:00+00:00",
+      "pricePence": 161.12,
+      "stationCount": 7954,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-21",
+      "availableAt": "2026-08-21T08:00:00+00:00",
+      "pricePence": 161.132,
+      "stationCount": 7955,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-22",
+      "availableAt": "2026-08-22T08:00:00+00:00",
+      "pricePence": 161.249,
+      "stationCount": 7957,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-23",
+      "availableAt": "2026-08-23T08:00:00+00:00",
+      "pricePence": 161.253,
+      "stationCount": 7957,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-24",
+      "availableAt": "2026-08-24T08:00:00+00:00",
+      "pricePence": 161.273,
+      "stationCount": 7958,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-25",
+      "availableAt": "2026-08-25T08:00:00+00:00",
+      "pricePence": 161.404,
+      "stationCount": 7958,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-26",
+      "availableAt": "2026-08-26T08:00:00+00:00",
+      "pricePence": 161.457,
+      "stationCount": 7960,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-27",
+      "availableAt": "2026-08-27T08:00:00+00:00",
+      "pricePence": 161.489,
+      "stationCount": 7963,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-28",
+      "availableAt": "2026-08-28T08:00:00+00:00",
+      "pricePence": 161.539,
+      "stationCount": 7965,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-29",
+      "availableAt": "2026-08-29T08:00:00+00:00",
+      "pricePence": 161.591,
+      "stationCount": 7965,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-30",
+      "availableAt": "2026-08-30T08:00:00+00:00",
+      "pricePence": 161.619,
+      "stationCount": 7965,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-08-31",
+      "availableAt": "2026-08-31T08:00:00+00:00",
+      "pricePence": 161.645,
+      "stationCount": 7965,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-01",
+      "availableAt": "2026-09-01T08:00:00+00:00",
+      "pricePence": 161.701,
+      "stationCount": 7965,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-02",
+      "availableAt": "2026-09-02T08:00:00+00:00",
+      "pricePence": 161.974,
+      "stationCount": 7966,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-03",
+      "availableAt": "2026-09-03T08:00:00+00:00",
+      "pricePence": 162.51,
+      "stationCount": 7969,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-04",
+      "availableAt": "2026-09-04T08:00:00+00:00",
+      "pricePence": 163.165,
+      "stationCount": 7970,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-05",
+      "availableAt": "2026-09-05T08:00:00+00:00",
+      "pricePence": 164.046,
+      "stationCount": 7973,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-06",
+      "availableAt": "2026-09-06T08:00:00+00:00",
+      "pricePence": 164.447,
+      "stationCount": 7974,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-07",
+      "availableAt": "2026-09-07T08:00:00+00:00",
+      "pricePence": 164.965,
+      "stationCount": 7974,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-08",
+      "availableAt": "2026-09-08T08:00:00+00:00",
+      "pricePence": 166.112,
+      "stationCount": 7975,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-09",
+      "availableAt": "2026-09-09T08:00:00+00:00",
+      "pricePence": 166.938,
+      "stationCount": 7978,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-10",
+      "availableAt": "2026-09-10T08:00:00+00:00",
+      "pricePence": 167.543,
+      "stationCount": 7981,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-11",
+      "availableAt": "2026-09-11T08:00:00+00:00",
+      "pricePence": 168.261,
+      "stationCount": 7985,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-12",
+      "availableAt": "2026-09-12T08:00:00+00:00",
+      "pricePence": 168.994,
+      "stationCount": 7985,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-13",
+      "availableAt": "2026-09-13T08:00:00+00:00",
+      "pricePence": 169.215,
+      "stationCount": 7987,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-14",
+      "availableAt": "2026-09-14T08:00:00+00:00",
+      "pricePence": 169.388,
+      "stationCount": 7988,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-15",
+      "availableAt": "2026-09-15T08:00:00+00:00",
+      "pricePence": 170.23,
+      "stationCount": 7992,
+      "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2024-12-30",
+      "availableAt": "2025-01-02T08:00:00+00:00",
+      "pricePence": 136.49,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-01-06",
+      "availableAt": "2025-01-09T08:00:00+00:00",
+      "pricePence": 136.6,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-01-13",
+      "availableAt": "2025-01-16T08:00:00+00:00",
+      "pricePence": 136.51,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-01-20",
+      "availableAt": "2025-01-23T08:00:00+00:00",
+      "pricePence": 136.97,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-01-27",
+      "availableAt": "2025-01-30T08:00:00+00:00",
+      "pricePence": 138.36,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-02-03",
+      "availableAt": "2025-02-06T08:00:00+00:00",
+      "pricePence": 138.74,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-02-10",
+      "availableAt": "2025-02-13T08:00:00+00:00",
+      "pricePence": 139.02,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-02-17",
+      "availableAt": "2025-02-20T08:00:00+00:00",
+      "pricePence": 139.22,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-02-24",
+      "availableAt": "2025-02-27T08:00:00+00:00",
+      "pricePence": 139.62,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-03-03",
+      "availableAt": "2025-03-06T08:00:00+00:00",
+      "pricePence": 139.61,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-03-10",
+      "availableAt": "2025-03-13T08:00:00+00:00",
+      "pricePence": 139.42,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-03-17",
+      "availableAt": "2025-03-20T08:00:00+00:00",
+      "pricePence": 137.97,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-03-24",
+      "availableAt": "2025-03-27T08:00:00+00:00",
+      "pricePence": 135.61,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-03-31",
+      "availableAt": "2025-04-03T08:00:00+00:00",
+      "pricePence": 134.91,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-04-07",
+      "availableAt": "2025-04-10T08:00:00+00:00",
+      "pricePence": 135.25,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-04-14",
+      "availableAt": "2025-04-17T08:00:00+00:00",
+      "pricePence": 134.85,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-04-21",
+      "availableAt": "2025-04-24T08:00:00+00:00",
+      "pricePence": 134.26,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-04-28",
+      "availableAt": "2025-05-01T08:00:00+00:00",
+      "pricePence": 133.84,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-05-05",
+      "availableAt": "2025-05-08T08:00:00+00:00",
+      "pricePence": 133.18,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-05-12",
+      "availableAt": "2025-05-15T08:00:00+00:00",
+      "pricePence": 132.32,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-05-19",
+      "availableAt": "2025-05-22T08:00:00+00:00",
+      "pricePence": 132.07,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-05-26",
+      "availableAt": "2025-05-29T08:00:00+00:00",
+      "pricePence": 131.99,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-06-02",
+      "availableAt": "2025-06-05T08:00:00+00:00",
+      "pricePence": 131.45,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-06-09",
+      "availableAt": "2025-06-12T08:00:00+00:00",
+      "pricePence": 131.35,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-06-16",
+      "availableAt": "2025-06-19T08:00:00+00:00",
+      "pricePence": 131.39,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-06-23",
+      "availableAt": "2025-06-26T08:00:00+00:00",
+      "pricePence": 132.33,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-06-30",
+      "availableAt": "2025-07-03T08:00:00+00:00",
+      "pricePence": 132.95,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-07-07",
+      "availableAt": "2025-07-10T08:00:00+00:00",
+      "pricePence": 133.19,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-07-14",
+      "availableAt": "2025-07-17T08:00:00+00:00",
+      "pricePence": 133.95,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-07-21",
+      "availableAt": "2025-07-24T08:00:00+00:00",
+      "pricePence": 134.09,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-07-28",
+      "availableAt": "2025-07-31T08:00:00+00:00",
+      "pricePence": 134.24,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-08-04",
+      "availableAt": "2025-08-07T08:00:00+00:00",
+      "pricePence": 134.3,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-08-11",
+      "availableAt": "2025-08-14T08:00:00+00:00",
+      "pricePence": 134.39,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-08-18",
+      "availableAt": "2025-08-21T08:00:00+00:00",
+      "pricePence": 134.3,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-08-25",
+      "availableAt": "2025-08-28T08:00:00+00:00",
+      "pricePence": 133.91,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-09-01",
+      "availableAt": "2025-09-04T08:00:00+00:00",
+      "pricePence": 133.86,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-09-08",
+      "availableAt": "2025-09-11T08:00:00+00:00",
+      "pricePence": 133.72,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-09-15",
+      "availableAt": "2025-09-18T08:00:00+00:00",
+      "pricePence": 133.81,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-09-22",
+      "availableAt": "2025-09-25T08:00:00+00:00",
+      "pricePence": 134.15,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-09-29",
+      "availableAt": "2025-10-02T08:00:00+00:00",
+      "pricePence": 134.36,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-10-06",
+      "availableAt": "2025-10-09T08:00:00+00:00",
+      "pricePence": 134.76,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-10-13",
+      "availableAt": "2025-10-16T08:00:00+00:00",
+      "pricePence": 134.81,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-10-20",
+      "availableAt": "2025-10-23T08:00:00+00:00",
+      "pricePence": 134.69,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-10-27",
+      "availableAt": "2025-10-30T08:00:00+00:00",
+      "pricePence": 134.4,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-11-03",
+      "availableAt": "2025-11-06T08:00:00+00:00",
+      "pricePence": 134.38,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-11-10",
+      "availableAt": "2025-11-13T08:00:00+00:00",
+      "pricePence": 134.65,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-11-17",
+      "availableAt": "2025-11-20T08:00:00+00:00",
+      "pricePence": 135.07,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-11-24",
+      "availableAt": "2025-11-27T08:00:00+00:00",
+      "pricePence": 136.07,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-12-01",
+      "availableAt": "2025-12-04T08:00:00+00:00",
+      "pricePence": 136.61,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-12-08",
+      "availableAt": "2025-12-11T08:00:00+00:00",
+      "pricePence": 136.68,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-12-15",
+      "availableAt": "2025-12-18T08:00:00+00:00",
+      "pricePence": 136.83,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-12-22",
+      "availableAt": "2025-12-25T08:00:00+00:00",
+      "pricePence": 136.23,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2025-12-29",
+      "availableAt": "2026-01-01T08:00:00+00:00",
+      "pricePence": 135.34,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-01-05",
+      "availableAt": "2026-01-08T08:00:00+00:00",
+      "pricePence": 134.9,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-01-12",
+      "availableAt": "2026-01-15T08:00:00+00:00",
+      "pricePence": 133.43,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-01-19",
+      "availableAt": "2026-01-22T08:00:00+00:00",
+      "pricePence": 132.64,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-01-26",
+      "availableAt": "2026-01-29T08:00:00+00:00",
+      "pricePence": 132.0,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-02-02",
+      "availableAt": "2026-02-05T08:00:00+00:00",
+      "pricePence": 131.62,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-02-09",
+      "availableAt": "2026-02-12T08:00:00+00:00",
+      "pricePence": 131.46,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-02-16",
+      "availableAt": "2026-02-19T08:00:00+00:00",
+      "pricePence": 131.6,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-02-23",
+      "availableAt": "2026-02-26T08:00:00+00:00",
+      "pricePence": 131.71,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-03-02",
+      "availableAt": "2026-03-05T08:00:00+00:00",
+      "pricePence": 132.14,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-03-09",
+      "availableAt": "2026-03-12T08:00:00+00:00",
+      "pricePence": 135.67,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-03-16",
+      "availableAt": "2026-03-19T08:00:00+00:00",
+      "pricePence": 140.28,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-03-23",
+      "availableAt": "2026-03-26T08:00:00+00:00",
+      "pricePence": 144.16,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-03-30",
+      "availableAt": "2026-04-02T08:00:00+00:00",
+      "pricePence": 148.78,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-04-06",
+      "availableAt": "2026-04-09T08:00:00+00:00",
+      "pricePence": 154.65,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-04-13",
+      "availableAt": "2026-04-16T08:00:00+00:00",
+      "pricePence": 158.17,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-04-20",
+      "availableAt": "2026-04-23T08:00:00+00:00",
+      "pricePence": 157.62,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-04-27",
+      "availableAt": "2026-04-30T08:00:00+00:00",
+      "pricePence": 156.99,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-05-04",
+      "availableAt": "2026-05-07T08:00:00+00:00",
+      "pricePence": 156.82,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-05-11",
+      "availableAt": "2026-05-14T08:00:00+00:00",
+      "pricePence": 156.81,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-05-18",
+      "availableAt": "2026-05-21T08:00:00+00:00",
+      "pricePence": 157.39,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-05-25",
+      "availableAt": "2026-05-28T08:00:00+00:00",
+      "pricePence": 158.78,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-06-01",
+      "availableAt": "2026-06-04T08:00:00+00:00",
+      "pricePence": 158.74,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-06-08",
+      "availableAt": "2026-06-11T08:00:00+00:00",
+      "pricePence": 157.95,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-06-15",
+      "availableAt": "2026-06-18T08:00:00+00:00",
+      "pricePence": 155.54,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-06-22",
+      "availableAt": "2026-06-25T08:00:00+00:00",
+      "pricePence": 153.26,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-06-29",
+      "availableAt": "2026-07-02T08:00:00+00:00",
+      "pricePence": 151.02,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-07-06",
+      "availableAt": "2026-07-09T08:00:00+00:00",
+      "pricePence": 149.8,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-07-13",
+      "availableAt": "2026-07-16T08:00:00+00:00",
+      "pricePence": 150.53,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-07-20",
+      "availableAt": "2026-07-23T08:00:00+00:00",
+      "pricePence": 152.29,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-07-27",
+      "availableAt": "2026-07-30T08:00:00+00:00",
+      "pricePence": 156.13,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-08-03",
+      "availableAt": "2026-08-06T08:00:00+00:00",
+      "pricePence": 159.89,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-08-10",
+      "availableAt": "2026-08-13T08:00:00+00:00",
+      "pricePence": 162.15,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-08-17",
+      "availableAt": "2026-08-20T08:00:00+00:00",
+      "pricePence": 161.8,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-08-24",
+      "availableAt": "2026-08-27T08:00:00+00:00",
+      "pricePence": 161.63,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-08-31",
+      "availableAt": "2026-09-03T08:00:00+00:00",
+      "pricePence": 161.61,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-09-07",
+      "availableAt": "2026-09-10T08:00:00+00:00",
+      "pricePence": 164.4,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "weekly",
+      "date": "2026-09-14",
+      "availableAt": "2026-09-17T08:00:00+00:00",
+      "pricePence": 168.14,
+      "stationCount": null,
+      "source": "desnz"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-16",
+      "availableAt": "2026-09-16T08:00:00+00:00",
+      "pricePence": 170.955,
+      "stationCount": 7994,
+      "source": "fuelcosts-archive"
+    }
+  ],
+  "productionExtension": [
+    {
+      "file": "stations.csv",
+      "revision": "06a5ef426aa67bf1a27eeb8395ac60c377ec539e",
+      "sha256": "8eb5dc3bdffb79a08f47e73b162a8dce65b0f1f8e794d7b2757f71e26ebfc8dc"
+    },
+    {
+      "file": "price_history.csv",
+      "revision": "06a5ef426aa67bf1a27eeb8395ac60c377ec539e",
+      "sha256": "df6ed79b885105eecbf2cdbe05257290a38b7befba0dff51a437a2894de8b965"
+    }
+  ]
+}

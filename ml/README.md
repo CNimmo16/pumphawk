@@ -7,7 +7,7 @@ Two independent model families share data preparation and evaluation code:
 - **Weekly:** official DESNZ sales-weighted petrol observations; outputs only the next two weekly observation dates. No interpolation, daily labels, or daily forecasts from weekly training.
 - **Daily:** FuelCosts E10 events, reconstructed at 08:00 UTC each day; predicts the snapshot at the same time on each of the next 14 calendar days. Equal-station observed-price proxy: historical closure state is unavailable, so exact live open-station eligibility cannot be claimed. Fixed initial cohort, freshness and present-day closure sensitivity series are retained.
 
-The application forecast is not changed by these research scripts. Existing sample prices never enter training.
+The research scripts preserve their frozen evaluation results. The app now consumes the daily and weekly JSON artifacts through TypeScript inference; see the root README and PRODUCTION.md. Existing sample prices never enter training.
 
 ## Use the trained models
 
@@ -27,7 +27,7 @@ python3 ml/scripts/predict.py weekly --features ml/artifacts/weekly/example-inpu
 
 The example inputs are dated historical fixtures, not current market readings. Replace them with features prepared under the matching frequency and availability rules below. `anchor_price` is the observed price in pence per litre; pump/futures changes are also pence per litre, and pump slopes are pence per litre per day. Features must use the training definitions in `scripts/prepare.py`. The JSON artifacts contain the required feature names, imputation values, scaling and fitted coefficients. `pumphawk_ml.inference.predict_portable` also provides a callable interface and rejects a frequency mismatch.
 
-These are the fitted models used in the held-out evaluation. Their `research_only` status records that they have not been enabled in the application. Point-accuracy gates passed; the daily 14-day uncertainty band remains inadequately calibrated. See [training results](TRAINING_RESULTS.md) before exposing probability claims.
+These are the fitted models used in the held-out evaluation. Their `research_only` status records the original evaluation export; the subsequent application release uses these unchanged fitted coefficients with the documented product restrictions. Point-accuracy gates passed; the daily 14-day uncertainty band remains inadequately calibrated. See [training results](TRAINING_RESULTS.md) before exposing probability claims.
 
 ## Run
 

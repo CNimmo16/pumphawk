@@ -12,7 +12,7 @@ const Pfs = z.object({
   is_motorway_service_station: z.boolean().nullish(),
   location: z.object({
     latitude: z.coerce.number().min(49).max(61),
-    longitude: z.coerce.number().min(-9).max(2),
+    longitude: z.coerce.number().min(-9).max(3),
     address_line_1: z.string().nullish(),
     postcode: z.string().nullish(),
   }),
@@ -62,6 +62,28 @@ export function parsePrice(input: unknown, now: Date) {
         ? price
         : null,
     priceUpdatedAt: date && Number.isFinite(+date) ? date : null,
+  };
+}
+// Training uses max(receipt, effective timestamp), including invalidations and future-effective prices.
+export function parseModelPrice(input: unknown, receivedAt: Date) {
+  const result = Prices.safeParse(input);
+  if (!result.success) return null;
+  const price = result.data.fuel_prices.find((p) => p.fuel_type === "E10");
+  if (!price) return null;
+  const stamp =
+    price.price_change_effective_timestamp ?? price.price_last_updated;
+  if (!stamp || !/(?:Z|[+-]\d\d:\d\d)$/.test(stamp)) return null;
+  const sourceAt = new Date(stamp);
+  if (!Number.isFinite(+sourceAt)) return null;
+  const value = Number(price.price);
+  return {
+    stationId: result.data.node_id,
+    sourceAt,
+    receivedAt,
+    availableAt: new Date(Math.max(+receivedAt, +sourceAt)),
+    pricePence:
+      Number.isFinite(value) && value >= 30 && value <= 600 ? value : null,
+    source: "fuel-finder",
   };
 }
 export class FuelFinderService {

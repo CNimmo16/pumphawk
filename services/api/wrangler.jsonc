@@ -20,5 +20,7 @@
       "localConnectionString": "postgres://pumphawk:pumphawk@127.0.0.1:55435/pumphawk",
     },
   ],
-  "triggers": { "crons": ["0 7 * * *", "0 8 * * *", "10 * * * *"] },
+  "triggers": {
+    "crons": ["0 7 * * *", "0 8 * * *", "5 8 * * *", "10 * * * *"],
+  },
 }

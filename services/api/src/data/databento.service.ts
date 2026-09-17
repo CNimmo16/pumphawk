@@ -10,6 +10,66 @@ export type Settlement = {
   expiresAt: Date;
   publishedAt: Date;
 };
+export function parseSettlementEvents(
+  rows: Record<string, string>[],
+  definitions: Record<string, string>[],
+) {
+  const grouped = new Map<string, Record<string, string>[]>();
+  for (const d of definitions) {
+    if (d.instrument_class !== "F" || !["B7H", "BZ"].includes(d.asset!))
+      continue;
+    const list = grouped.get(d.raw_symbol!) ?? [];
+    list.push(d);
+    grouped.set(d.raw_symbol!, list);
+  }
+  for (const list of grouped.values())
+    list.sort(
+      (a, b) => (Date.parse(b.ts_recv!) || 0) - (Date.parse(a.ts_recv!) || 0),
+    );
+  return rows.flatMap((r) => {
+    const flags = Number(r.stat_flags),
+      publishedAt = new Date(r.ts_recv!),
+      deleted = Number(r.update_action) === 2;
+    if (
+      Number(r.stat_type) !== 3 ||
+      !(flags & 1) ||
+      flags & 8 ||
+      !Number.isFinite(+publishedAt)
+    )
+      return [];
+    const d = grouped
+      .get(r.symbol!)
+      ?.find((v) => !v.ts_recv || Date.parse(v.ts_recv) <= +publishedAt);
+    const priceUsd = Number(r.price),
+      date = r.ts_ref?.slice(0, 10);
+    if (
+      !d ||
+      !date ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isFinite(Date.parse(d.expiration!))
+    )
+      return [];
+    if (
+      !deleted &&
+      (!r.price ||
+        !Number.isFinite(priceUsd) ||
+        priceUsd <= 0 ||
+        priceUsd > 10000)
+    )
+      return [];
+    return [
+      {
+        product: d.asset as "B7H" | "BZ",
+        symbol: r.symbol!,
+        date,
+        publishedAt,
+        expiresAt: new Date(d.expiration!),
+        priceUsd: deleted ? 0 : priceUsd,
+        deleted,
+      },
+    ];
+  });
+}
 export function selectContracts(rows: Record<string, string>[], now: Date) {
   const unique = new Map<string, Record<string, string>>();
   for (const r of rows)
@@ -127,8 +187,39 @@ export class DatabentoService {
     );
   }
   async daily(now: Date, initial: boolean) {
-    const end = now.toISOString().slice(0, 10);
-    let definitionDay = new Date(Date.parse(end) - DAY);
+    if (!this.config.databentoApiKey)
+      throw new AppError(
+        "DATABENTO_NOT_CONFIGURED",
+        "Databento API credentials are missing.",
+        503,
+      );
+    // Historical delivery trails wall time and each schema has its own watermark.
+    const range = JSON.parse(
+      await providerText(
+        this.http,
+        "https://hist.databento.com/v0/metadata.get_dataset_range?dataset=GLBX.MDP3",
+        {
+          headers: {
+            Authorization: `Basic ${btoa(this.config.databentoApiKey + ":")}`,
+          },
+        },
+        100_000,
+      ),
+    );
+    const available = Math.min(
+      +now,
+      Date.parse(range.schema?.statistics?.end),
+      Date.parse(range.schema?.definition?.end),
+    );
+    if (!Number.isFinite(available) || +now - available > 5 * DAY)
+      throw new AppError(
+        "DATABENTO_STALE",
+        "Fresh historical settlement data is not yet available.",
+        503,
+      );
+    const end = new Date(available).toISOString();
+    const endDay = end.slice(0, 10);
+    let definitionDay = new Date(Date.parse(endDay) - DAY);
     while ([0, 6].includes(definitionDay.getUTCDay()))
       definitionDay = new Date(+definitionDay - DAY);
     const definitions = await this.download(
@@ -148,7 +239,7 @@ export class DatabentoService {
         "No active B7H/Brent contracts were returned. Existing data was retained.",
         503,
       );
-    const start = new Date(Date.parse(end) - (initial ? 35 : 7) * DAY)
+    const start = new Date(Date.parse(endDay) - (initial ? 40 : 7) * DAY)
       .toISOString()
       .slice(0, 10);
     const stats = await this.download(
@@ -158,7 +249,32 @@ export class DatabentoService {
       start,
       end,
     );
-    const settlements = parseSettlements(stats, contracts);
+    const historicalDefinitions = await this.download(
+      contracts.map((d) => d.raw_symbol).join(","),
+      "raw_symbol",
+      "definition",
+      start,
+      end,
+    );
+    const events = parseSettlementEvents(stats, historicalDefinitions);
+    const latest = new Map<string, Settlement>();
+    for (const event of [...events].sort(
+      (a, b) => +a.publishedAt - +b.publishedAt,
+    )) {
+      const key = `${event.symbol}:${event.date}`;
+      if (event.deleted) latest.delete(key);
+      else latest.set(key, event);
+    }
+    const settlements = [...latest.values()].map(
+      ({ product, symbol, date, priceUsd, expiresAt, publishedAt }) => ({
+        product,
+        symbol,
+        date,
+        priceUsd,
+        expiresAt,
+        publishedAt,
+      }),
+    );
     if (
       !settlements.some((s) => s.product === "B7H") ||
       !settlements.some((s) => s.product === "BZ")
@@ -168,17 +284,24 @@ export class DatabentoService {
         "No final B7H/Brent settlements were returned. Existing data was retained.",
         503,
       );
-    return { settlements, start, end };
+    return { settlements, events, start, end: endDay };
   }
   async exchangeRates(start: string, end: string) {
-    const rows = JSON.parse(
-      await providerText(
-        this.http,
-        `https://api.frankfurter.dev/v2/rates?base=GBP&quotes=USD&providers=ecb&from=${start}&to=${end}`,
-        {},
-        100000,
-      ),
-    ) as { date: string; rate: number }[];
+    const csv = await providerText(
+      this.http,
+      `https://data-api.ecb.europa.eu/service/data/EXR/D.USD+GBP.EUR.SP00.A?startPeriod=${start}&endPeriod=${end}&format=csvdata`,
+      {},
+      1_000_000,
+    );
+    const pairs = new Map<string, Record<string, number>>();
+    for (const row of parseCsv(csv)) {
+      const pair = pairs.get(row.TIME_PERIOD!) ?? {};
+      pair[row.CURRENCY!] = Number(row.OBS_VALUE);
+      pairs.set(row.TIME_PERIOD!, pair);
+    }
+    const rows = [...pairs]
+      .filter(([, r]) => r.USD && r.GBP)
+      .map(([date, r]) => ({ date, rate: r.USD! / r.GBP! }));
     if (
       !Array.isArray(rows) ||
       !rows.length ||

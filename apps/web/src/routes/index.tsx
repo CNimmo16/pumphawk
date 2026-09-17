@@ -5,6 +5,7 @@ import {
   getDashboardOptions,
   getDriverOptions,
   getForecastOptions,
+  getWeeklyOutlookOptions,
   getTrackedStationsOptions,
 } from "@pump-hawk/openapi/react-query";
 import type { Driver, Recommendation } from "@pump-hawk/openapi/types";
@@ -26,6 +27,7 @@ import { AuthForm } from "../components/auth-form";
 import { DriverForm, TankForm } from "../components/driver-form";
 import { Modal } from "../components/modal";
 import { PriceChart, StationChart } from "../components/price-chart";
+import { WeeklyOutlookChart } from "../components/weekly-outlook";
 export const Route = createFileRoute("/")({ component: Dashboard });
 function HawkLogo() {
   return (
@@ -181,6 +183,12 @@ function Dashboard() {
     ...getDriverOptions(),
     enabled: ready && signedIn,
     retry: false,
+  });
+  const weekly = useQuery({
+    ...getWeeklyOutlookOptions(),
+    enabled: ready,
+    staleTime: 3600000,
+    retry: 1,
   });
   const personal = useQuery({
     ...getDashboardOptions(),
@@ -412,9 +420,13 @@ function Dashboard() {
                 <div className="section-heading">
                   <div>
                     <h2>The road ahead</h2>
-                    <p>UK E10 petrol · 14 days back, 14 days ahead</p>
+                    <p>UK E10 petrol · daily observations and 14-day outlook</p>
                   </div>
-                  <span className="period-pill">UK outlook</span>
+                  <span className="period-pill">
+                    {forecast?.model === "daily-ridge"
+                      ? "Daily model"
+                      : "Price outlook"}
+                  </span>
                 </div>
                 {forecast ? (
                   <>
@@ -424,8 +436,11 @@ function Dashboard() {
                       <span>
                         {forecast.mode === "sample"
                           ? "Includes synthetic local pump history. "
-                          : "Fuel Finder reporting-station average. "}
-                        Shading shows an illustrative uncertainty range.
+                          : forecast?.model === "daily-ridge"
+                            ? "Observed-station average, fixed at 08:00 UTC. Buying advice uses the next seven days; days 8–14 are a longer-term outlook. "
+                            : "Heuristic fallback using the live open-station average. "}
+                        Shading is an empirical or illustrative range, not a
+                        guaranteed probability.
                       </span>
                     </div>
                   </>
@@ -434,6 +449,24 @@ function Dashboard() {
                     {national.error
                       ? errorMessage(national.error)
                       : "Loading the latest national prices…"}
+                  </div>
+                )}
+              </section>
+              <section className="card forecast-card" id="weekly-outlook">
+                <div className="section-heading">
+                  <div>
+                    <h2>Official UK outlook</h2>
+                    <p>Sales-weighted petrol · next two weekly observations</p>
+                  </div>
+                  <span className="period-pill">Weekly model</span>
+                </div>
+                {weekly.data ? (
+                  <WeeklyOutlookChart outlook={weekly.data} />
+                ) : (
+                  <div className="chart-empty" role="status">
+                    {weekly.isError
+                      ? errorMessage(weekly.error)
+                      : "Loading the official weekly outlook…"}
                   </div>
                 )}
               </section>

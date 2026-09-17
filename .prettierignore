@@ -9,3 +9,6 @@ services/api/worker-configuration.d.ts
 apps/web/worker-configuration.d.ts
 apps/web/src/routeTree.gen.ts
 services/api/drizzle
+
+services/api/data
+services/api/src/pricing/model-fixtures.json

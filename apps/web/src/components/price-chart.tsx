@@ -96,7 +96,9 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
                 key={p.date}
                 d={`M${x(a.date)},${y(a.highPence)} L${x(p.date)},${y(p.highPence)} L${x(p.date)},${y(p.lowPence)} L${x(a.date)},${y(a.lowPence)} Z`}
                 fill={p.confidence === "medium" ? "#c9dfad" : "#eddeb6"}
-                opacity=".6"
+                opacity={
+                  forecast.model === "daily-ridge" && i >= 7 ? 0.25 : 0.6
+                }
               />
             );
           })}
@@ -156,7 +158,11 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
               textAnchor="middle"
               className="chart-label"
             >
-              {date === today ? "TODAY" : dateLabel(date)}
+              {date === today
+                ? forecast.model === "daily-ridge"
+                  ? "SNAPSHOT"
+                  : "TODAY"
+                : dateLabel(date)}
             </text>
           ))}
           {selected && (
@@ -224,12 +230,20 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
           <ForecastTooltip anchor={selectedPoint}>
             <div className="tooltip-heading">
               <strong>{dateLabel(selected.date)}</strong>
-              <span>{selected.confidence ?? "low"} certainty</span>
+              <span>
+                {forecast.model === "daily-ridge" &&
+                selected.date > future[7]!.date
+                  ? "Longer-term outlook"
+                  : `${selected.confidence ?? "low"} certainty`}
+              </span>
             </div>
             <div className="tooltip-price">
               {selected.pricePence.toFixed(2)}
               <small>p/L</small>
-              <span>{signed(delta)} vs today</span>
+              <span>
+                {signed(delta)} vs{" "}
+                {forecast.model === "daily-ridge" ? "snapshot" : "today"}
+              </span>
             </div>
             <p>
               Possible range:{" "}
@@ -245,7 +259,7 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
                     {s.label}
                     <span>
                       {s.available
-                        ? `${Math.round(s.weight * 100)}% weight · ${signed(s.contributionPence)}`
+                        ? `${s.weight == null ? "" : `${Math.round(s.weight * 100)}% weight · `}${signed(s.contributionPence)}`
                         : "Unavailable"}
                     </span>
                   </strong>
@@ -259,8 +273,9 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
               )}
             </div>
             <small>
-              Signal contributions are changes from today’s price. The range is
-              illustrative, not a probability interval.
+              Contributions sum to the change from the observed anchor. They are
+              fitted terms, not causal effects. The range is not a guaranteed
+              probability interval.
             </small>
           </ForecastTooltip>
         )}

@@ -9,6 +9,12 @@ export type Forecast = {
     generatedAt: string;
     source: string;
     mode: 'demo' | 'live' | 'sample';
+    model?: 'daily-ridge' | 'heuristic';
+    modelVersion?: string;
+    adviceHorizonDays?: number;
+    snapshotAt?: string;
+    series?: string;
+    openStationPricePence?: number | null;
     fuelType: 'petrol';
     currency: 'GBP';
     unit: 'pence/litre';
@@ -32,9 +38,9 @@ export type Forecast = {
         highPence: number;
         confidence?: 'low' | 'medium';
         signals?: Array<{
-            name: 'pump' | 'b7h' | 'crude';
+            name: 'pump' | 'b7h' | 'crude' | 'baseline';
             label: string;
-            weight: number;
+            weight?: number;
             contributionPence: number;
             detail: string;
             available: boolean;
@@ -181,6 +187,36 @@ export type OnboardingInput = {
 
 export type TankInput = {
     currentLitres: number;
+};
+
+export type WeeklyOutlook = {
+    model: 'weekly-huber';
+    modelVersion: string;
+    generatedAt: string;
+    issuedAt: string;
+    referenceDate: string;
+    series: 'Official DESNZ sales-weighted petrol';
+    unit: 'pence/litre';
+    history: Array<{
+        date: string;
+        pricePence: number;
+    }>;
+    points: Array<{
+        date: string;
+        pricePence: number;
+        lowPence: number;
+        highPence: number;
+        confidence?: 'low' | 'medium';
+        signals?: Array<{
+            name: 'pump' | 'b7h' | 'crude' | 'baseline';
+            label: string;
+            weight?: number;
+            contributionPence: number;
+            detail: string;
+            available: boolean;
+        }>;
+    }>;
+    warnings: Array<string>;
 };
 
 export type PhoneNumber = {
@@ -861,7 +897,7 @@ export type UpdateTankResponse = UpdateTankResponses[keyof UpdateTankResponses];
 export type SyncDataData = {
     body?: never;
     path: {
-        kind: 'daily' | 'hourly';
+        kind: 'daily' | 'hourly' | 'models';
     };
     query?: never;
     url: '/api/v1/data/sync/{kind}';
@@ -912,6 +948,31 @@ export type SyncDataResponses = {
 };
 
 export type SyncDataResponse = SyncDataResponses[keyof SyncDataResponses];
+
+export type GetWeeklyOutlookData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/forecast/weekly';
+};
+
+export type GetWeeklyOutlookErrors = {
+    /**
+     * Data unavailable or stale
+     */
+    503: ApiError;
+};
+
+export type GetWeeklyOutlookError = GetWeeklyOutlookErrors[keyof GetWeeklyOutlookErrors];
+
+export type GetWeeklyOutlookResponses = {
+    /**
+     * Next two official weekly observations; never a daily forecast
+     */
+    200: WeeklyOutlook;
+};
+
+export type GetWeeklyOutlookResponse = GetWeeklyOutlookResponses[keyof GetWeeklyOutlookResponses];
 
 export type SendPhoneOtpData = {
     body: PhoneNumber;

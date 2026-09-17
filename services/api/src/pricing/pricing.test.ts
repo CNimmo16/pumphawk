@@ -17,6 +17,36 @@ const base: Driver = {
 };
 const falling = () =>
   forecastPrices(demoObservations(now), now, "demo", "test");
+describe("daily model buying decisions", () => {
+  it("ignores day-14 rises and trivial short-term savings", () => {
+    const forecast = falling();
+    forecast.model = "daily-ridge";
+    forecast.adviceHorizonDays = 7;
+    forecast.signal = "rising";
+    forecast.points = forecast.points
+      .slice(0, 15)
+      .map((p, i) => ({
+        ...p,
+        pricePence: forecast.currentPricePence + (i > 7 ? 30 : -0.1),
+      }));
+    expect(recommend(base, forecast, now).action).toBe("hold");
+  });
+  it("can wait for a meaningful dip even if the headline says rising", () => {
+    const forecast = falling();
+    forecast.model = "daily-ridge";
+    forecast.signal = "rising";
+    forecast.points = forecast.points
+      .slice(0, 15)
+      .map((p, i) => ({
+        ...p,
+        pricePence: forecast.currentPricePence + (i === 3 ? -5 : 4),
+      }));
+    const advice = recommend(base, forecast, now);
+    expect(advice.action).toBe("wait");
+    expect(advice.nextFillDate).toBe("2026-09-18");
+    expect(advice.estimatedSavingsGbp).toBeGreaterThanOrEqual(1);
+  });
+});
 describe("GBP wholesale forecast (PRICES.md)", () => {
   it("returns today plus 30 daily forecasts with bounded, widening ranges", () => {
     const f = falling();

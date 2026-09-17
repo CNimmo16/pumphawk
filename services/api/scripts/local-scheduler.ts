@@ -17,18 +17,31 @@ console.log(
 while (!stopped) {
   const now = new Date(),
     utc = now.toISOString();
-  for (const kind of ["daily", "hourly"] as const) {
-    const slot = kind === "daily" ? utc.slice(0, 10) : utc.slice(0, 13);
+  for (const kind of ["daily", "hourly", "models"] as const) {
+    const slot = kind !== "hourly" ? utc.slice(0, 10) : utc.slice(0, 13);
     if (
       seen.get(kind) === slot ||
       (seen.has(kind) &&
-        (kind === "daily" ? now.getUTCHours() < 8 : now.getUTCMinutes() < 10))
+        (kind === "hourly"
+          ? now.getUTCMinutes() < 10
+          : now.getUTCHours() < 8 ||
+            (kind === "models" &&
+              now.getUTCHours() === 8 &&
+              now.getUTCMinutes() < 5)))
     )
       continue;
     const injector = buildInjector(config);
     seen.set(kind, slot);
     try {
-      const result = await injector.resolve("syncService")[kind]();
+      let result;
+      if (kind === "models") {
+        const data = injector.resolve("modelDataService");
+        await data.weekly();
+        await data.snapshot();
+        await injector.resolve("modelService").daily();
+        await injector.resolve("modelService").weekly();
+        result = { kind, complete: true };
+      } else result = await injector.resolve("syncService")[kind]();
       console.log(JSON.stringify({ event: "local_data_sync", ...result }));
     } catch (error) {
       console.error(

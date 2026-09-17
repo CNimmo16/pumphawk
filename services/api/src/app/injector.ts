@@ -2,6 +2,8 @@ import { DatabentoService } from "../data/databento.service";
 import { FuelFinderService } from "../data/fuel-finder.service";
 import { SyncService } from "../data/sync.service";
 import { StationService } from "../data/station.service";
+import { ModelDataService } from "../data/model-data.service";
+import { ModelService } from "../pricing/model.service";
 import type { HttpClient } from "../data/http";
 import { createInjector } from "typed-inject";
 import type { Config } from "./config";
@@ -31,6 +33,8 @@ export function buildInjector(
     .provideClass("authService", AuthService)
     .provideClass("databentoService", DatabentoService)
     .provideClass("fuelFinderService", FuelFinderService)
+    .provideClass("modelDataService", ModelDataService)
+    .provideClass("modelService", ModelService)
     .provideClass("syncService", SyncService)
     .provideClass("stationService", StationService)
     .provideClass("marketService", MarketService)

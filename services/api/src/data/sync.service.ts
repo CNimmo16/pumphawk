@@ -8,11 +8,15 @@ import {
   station,
   stationPrice,
   syncState,
+  modelPumpEvent,
+  modelSettlementEvent,
+  modelFxRate,
 } from "../lib/db/schema";
 import { DatabentoService } from "./databento.service";
 import {
   FuelFinderService,
   parsePrice,
+  parseModelPrice,
   parseStation,
 } from "./fuel-finder.service";
 import { AppError } from "../app/errors";
@@ -62,13 +66,38 @@ export class SyncService {
       `databento:${now.toISOString().slice(0, 10)}`,
       async () => {
         const existing =
-          await this.store.db.query.futuresSettlement.findFirst();
+          await this.store.db.query.modelSettlementEvent.findFirst();
         const result = await this.databento.daily(now, !existing);
         const rates = await this.databento.exchangeRates(
           result.start,
           result.end,
         );
         await this.store.db.transaction(async (tx) => {
+          if (result.events.length)
+            await tx
+              .insert(modelSettlementEvent)
+              .values(result.events)
+              .onConflictDoNothing();
+          const previousRates = await tx.query.modelFxRate.findMany({
+            where: { date: { gte: result.start } },
+            orderBy: { availableAt: "asc" },
+          });
+          const knownRates = new Map(
+            previousRates.map((r) => [r.date, r.usdPerGbp]),
+          );
+          const newRates = rates
+            .filter((r) => knownRates.get(r.date) !== r.usdPerGbp)
+            .map((r) => ({
+              ...r,
+              availableAt: new Date(
+                Math.max(
+                  Date.parse(r.date + "T18:00:00Z"),
+                  knownRates.has(r.date) ? +this.clock() : 0,
+                ),
+              ),
+            }));
+          if (newRates.length)
+            await tx.insert(modelFxRate).values(newRates).onConflictDoNothing();
           for (const row of result.settlements)
             await tx
               .insert(futuresSettlement)
@@ -80,6 +109,7 @@ export class SyncService {
                   futuresSettlement.date,
                 ],
                 set: { ...row, downloadedAt: now },
+                setWhere: sql`${futuresSettlement.publishedAt} <= ${row.publishedAt.toISOString()}::timestamptz`,
               });
           for (const row of rates)
             await tx
@@ -106,6 +136,7 @@ export class SyncService {
       const token = await this.fuelFinder.token();
       const stations: NonNullable<ReturnType<typeof parseStation>>[] = [],
         prices: NonNullable<ReturnType<typeof parsePrice>>[] = [];
+      const modelEvents: NonNullable<ReturnType<typeof parseModelPrice>>[] = [];
       for await (const page of this.fuelFinder.pages(token, "stations", since))
         for (const raw of page) {
           const row = parseStation(raw);
@@ -113,8 +144,11 @@ export class SyncService {
         }
       for await (const page of this.fuelFinder.pages(token, "prices", since))
         for (const raw of page) {
-          const row = parsePrice(raw, now);
+          const receivedAt = this.clock();
+          const row = parsePrice(raw, receivedAt);
           if (row) prices.push(row);
+          const event = parseModelPrice(raw, receivedAt);
+          if (event) modelEvents.push(event);
         }
       if (full && (!stations.length || !prices.length))
         throw new AppError(
@@ -155,10 +189,23 @@ export class SyncService {
             sql`, `,
           );
           await tx.execute(
-            sql`update station as s set price_pence=v.price,price_updated_at=v.stamp from (values ${values}) as v(id,price,stamp) where s.id=v.id`,
+            sql`update station as s set price_pence=v.price,price_updated_at=v.stamp from (values ${values}) as v(id,price,stamp) where s.id=v.id and v.stamp is not null and (s.price_updated_at is null or v.stamp >= s.price_updated_at)`,
           );
         }
         await tx.update(station).set({ checkedAt: now });
+        const eligible = new Set(
+          (await tx.query.station.findMany({ columns: { id: true } })).map(
+            (s) => s.id,
+          ),
+        );
+        const observedEvents = modelEvents.filter((e) =>
+          eligible.has(e.stationId),
+        );
+        for (let i = 0; i < observedEvents.length; i += 500)
+          await tx
+            .insert(modelPumpEvent)
+            .values(observedEvents.slice(i, i + 500))
+            .onConflictDoNothing();
         const all = await tx.query.station.findMany({
           where: { closed: false, pricePence: { isNotNull: true } },
         });

@@ -52,9 +52,9 @@ export const IngestSchema = z
   })
   .openapi("MarketIngestion");
 export const SignalBreakdownSchema = z.object({
-  name: z.enum(["pump", "b7h", "crude"]),
+  name: z.enum(["pump", "b7h", "crude", "baseline"]),
   label: z.string(),
-  weight: z.number(),
+  weight: z.number().optional(),
   contributionPence: z.number(),
   detail: z.string(),
   available: z.boolean(),
@@ -73,6 +73,12 @@ export const ForecastSchema = z
     generatedAt: z.iso.datetime(),
     source: z.string(),
     mode: z.enum(["demo", "live", "sample"]),
+    model: z.enum(["daily-ridge", "heuristic"]).optional(),
+    modelVersion: z.string().optional(),
+    adviceHorizonDays: z.number().int().optional(),
+    snapshotAt: z.iso.datetime().optional(),
+    series: z.string().optional(),
+    openStationPricePence: z.number().nullable().optional(),
     fuelType: z.literal("petrol"),
     currency: z.literal("GBP"),
     unit: z.literal("pence/litre"),
@@ -97,6 +103,21 @@ export const ForecastSchema = z
     warnings: z.array(z.string()),
   })
   .openapi("Forecast");
+export const WeeklyOutlookSchema = z
+  .object({
+    model: z.literal("weekly-huber"),
+    modelVersion: z.string(),
+    generatedAt: z.iso.datetime(),
+    issuedAt: z.iso.datetime(),
+    referenceDate: z.iso.date(),
+    series: z.literal("Official DESNZ sales-weighted petrol"),
+    unit: z.literal("pence/litre"),
+    history: z.array(z.object({ date: z.iso.date(), pricePence: z.number() })),
+    points: z.array(ForecastPointSchema),
+    warnings: z.array(z.string()),
+  })
+  .openapi("WeeklyOutlook");
+export type WeeklyOutlook = z.infer<typeof WeeklyOutlookSchema>;
 export const RecommendationSchema = z
   .object({
     action: z.enum(["wait", "top-up", "fill-now", "hold", "update-tank"]),

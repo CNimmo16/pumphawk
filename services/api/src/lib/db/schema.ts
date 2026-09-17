@@ -227,3 +227,81 @@ export const syncState = pgTable("sync_state", {
   key: text("key").primaryKey(),
   syncedAt: time("synced_at").notNull(),
 });
+
+// Append-only observations preserve what was knowable at a forecast cutoff.
+export const modelPumpEvent = pgTable(
+  "model_pump_event",
+  {
+    stationId: text("station_id").notNull(),
+    sourceAt: time("source_at").notNull(),
+    receivedAt: time("received_at").notNull(),
+    availableAt: time("available_at").notNull(),
+    pricePence: doublePrecision("price_pence"),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.stationId, t.sourceAt, t.receivedAt] }),
+    index("model_pump_available_idx").on(t.availableAt),
+  ],
+);
+
+export const modelPrice = pgTable(
+  "model_price",
+  {
+    frequency: text("frequency", { enum: ["daily", "weekly"] }).notNull(),
+    date: date("date").notNull(),
+    availableAt: time("available_at").notNull(),
+    pricePence: doublePrecision("price_pence").notNull(),
+    stationCount: integer("station_count"),
+    source: text("source").notNull(),
+    openStationPricePence: doublePrecision("open_station_price_pence"),
+  },
+  (t) => [primaryKey({ columns: [t.frequency, t.date] })],
+);
+
+export const modelSettlementEvent = pgTable(
+  "model_settlement_event",
+  {
+    product: text("product", { enum: ["B7H", "BZ"] }).notNull(),
+    symbol: text("symbol").notNull(),
+    date: date("date").notNull(),
+    publishedAt: time("published_at").notNull(),
+    expiresAt: time("expires_at").notNull(),
+    priceUsd: doublePrecision("price_usd").notNull(),
+    deleted: boolean("deleted").notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.product, t.symbol, t.date, t.publishedAt] }),
+    index("model_settlement_date_idx").on(t.date),
+  ],
+);
+
+export const modelFxRate = pgTable(
+  "model_fx_rate",
+  {
+    date: date("date").notNull(),
+    availableAt: time("available_at").notNull(),
+    usdPerGbp: doublePrecision("usd_per_gbp").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.date, t.availableAt] })],
+);
+
+export const forecastRun = pgTable(
+  "forecast_run",
+  {
+    frequency: text("frequency", { enum: ["daily", "weekly"] }).notNull(),
+    origin: time("origin").notNull(),
+    modelVersion: text("model_version").notNull(),
+    createdAt: time("created_at").notNull().defaultNow(),
+    inputs: jsonb("inputs")
+      .$type<Record<string, number | null | string>>()
+      .notNull(),
+    result: jsonb("result")
+      .$type<
+        | import("@pump-hawk/contracts").Forecast
+        | import("@pump-hawk/contracts").WeeklyOutlook
+      >()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.frequency, t.origin, t.modelVersion] })],
+);

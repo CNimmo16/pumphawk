@@ -99,6 +99,46 @@ export function recommend(
     estimatedSavingsGbp: 0,
     ...extra,
   });
+  // The trained curve is evaluated over reachable dates, not its day-14 headline.
+  // £1 and 0.5p/L are explicit product thresholds, not statistical guarantees.
+  const modelCandidates =
+    forecast.model === "daily-ridge"
+      ? forecast.points
+          .filter((p) => {
+            const days = (Date.parse(p.date) - Date.parse(today)) / DAY;
+            return (
+              days >= 1 &&
+              p.date <= addDays(forecast.asOf, 7) &&
+              plannedLitres(driver, today, days) <=
+                driver.tankCapacityLitres - reserve
+            );
+          })
+          .map((p) => {
+            const days = (Date.parse(p.date) - Date.parse(today)) / DAY;
+            const needed = Math.max(
+              0,
+              plannedLitres(driver, today, days) + reserve - current,
+            );
+            const saving =
+              ((forecast.currentPricePence - p.pricePence) *
+                Math.max(0, space - needed)) /
+              100;
+            return { ...p, days, needed, saving };
+          })
+      : [];
+  const worthwhile = modelCandidates.filter(
+    (p) => p.saving >= 1 && forecast.currentPricePence - p.pricePence >= 0.5,
+  );
+  const best = worthwhile.sort(
+    (a, b) => b.saving - a.saving || a.days - b.days,
+  )[0];
+  const nextNeeded = modelCandidates.find(
+    (p) => current - plannedLitres(driver, today, p.days) < reserve,
+  );
+  const risingBeforeNeeded =
+    nextNeeded &&
+    nextNeeded.pricePence - forecast.currentPricePence >= 0.5 &&
+    ((nextNeeded.pricePence - forecast.currentPricePence) * space) / 100 >= 1;
   let result: Recommendation;
   if (ageDays > 7)
     result = make(
@@ -121,16 +161,45 @@ export function recommend(
       "Your stated daily driving uses more than one tank’s usable fuel. Fill available space and plan another stop before reaching reserve.",
       space,
     );
-  else if (["rising", "disruption", "fx-shock"].includes(forecast.signal))
+  else if (forecast.model === "daily-ridge" && best)
+    result = make(
+      best.needed > 0 ? "top-up" : "wait",
+      best.needed > 0
+        ? "A little now. Reassess before filling."
+        : "A cheaper stop may be ahead.",
+      `The next seven days suggest waiting until ${displayDay(best.date)} may save about £${best.saving.toFixed(2)}. Keep your reserve and reassess tomorrow.`,
+      best.needed,
+      {
+        fillDate: best.needed > 0 ? today : best.date,
+        nextFillDate: best.date,
+        targetPricePence: best.pricePence,
+        estimatedSavingsGbp: round(best.saving),
+      },
+    );
+  else if (forecast.model === "daily-ridge" && risingBeforeNeeded)
+    result = make(
+      "fill-now",
+      "Get ahead of your next needed fill",
+      "The model expects a meaningful rise before you need fuel within the next seven days. Filling now may help; reassess daily.",
+      space,
+    );
+  else if (
+    forecast.model !== "daily-ridge" &&
+    ["rising", "disruption", "fx-shock"].includes(forecast.signal)
+  )
     result = make(
       "fill-now",
       "Get ahead of the rise",
       forecast.explanation,
       space,
     );
-  else if (forecast.signal === "falling" && forecast.direction === "falling") {
+  else if (
+    forecast.model !== "daily-ridge" &&
+    forecast.signal === "falling" &&
+    forecast.direction === "falling"
+  ) {
     const candidates = forecast.points
-      .slice(1)
+      .slice(1, (forecast.adviceHorizonDays ?? 14) + 1)
       .filter(
         (_, i) =>
           plannedLitres(driver, today, i + 1) <=

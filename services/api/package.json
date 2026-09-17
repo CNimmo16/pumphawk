@@ -15,7 +15,8 @@
     "test": "vitest run --exclude '**/*.integration.test.ts'",
     "test:integration": "vitest run src/app/app.integration.test.ts",
     "data:sync": "node --import tsx scripts/sync-data.ts",
-    "data:watch": "node --import tsx scripts/local-scheduler.ts"
+    "data:watch": "node --import tsx scripts/local-scheduler.ts",
+    "data:bootstrap": "node --import tsx scripts/bootstrap-models.ts"
   },
   "dependencies": {
     "@pump-hawk/contracts": "workspace:*",

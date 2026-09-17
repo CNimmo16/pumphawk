@@ -10,3 +10,4 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 .local/
+services/api/wrangler.production.json

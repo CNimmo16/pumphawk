@@ -3,7 +3,7 @@
   "info": {
     "title": "Pump Hawk API",
     "version": "0.1.0",
-    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Heuristic methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret."
+    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret."
   },
   "servers": [
     {
@@ -67,6 +67,32 @@
               "demo",
               "live",
               "sample"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "daily-ridge",
+              "heuristic"
+            ]
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "adviceHorizonDays": {
+            "type": "integer"
+          },
+          "snapshotAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "series": {
+            "type": "string"
+          },
+          "openStationPricePence": {
+            "type": [
+              "number",
+              "null"
             ]
           },
           "fuelType": {
@@ -197,7 +223,8 @@
                         "enum": [
                           "pump",
                           "b7h",
-                          "crude"
+                          "crude",
+                          "baseline"
                         ]
                       },
                       "label": {
@@ -219,7 +246,6 @@
                     "required": [
                       "name",
                       "label",
-                      "weight",
                       "contributionPence",
                       "detail",
                       "available"
@@ -825,6 +851,154 @@
         },
         "required": [
           "currentLitres"
+        ]
+      },
+      "WeeklyOutlook": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "weekly-huber"
+            ]
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "referenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "series": {
+            "type": "string",
+            "enum": [
+              "Official DESNZ sales-weighted petrol"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "pence/litre"
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "pricePence": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "date",
+                "pricePence"
+              ]
+            }
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "pricePence": {
+                  "type": "number"
+                },
+                "lowPence": {
+                  "type": "number"
+                },
+                "highPence": {
+                  "type": "number"
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium"
+                  ]
+                },
+                "signals": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "enum": [
+                          "pump",
+                          "b7h",
+                          "crude",
+                          "baseline"
+                        ]
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "weight": {
+                        "type": "number"
+                      },
+                      "contributionPence": {
+                        "type": "number"
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "available": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "label",
+                      "contributionPence",
+                      "detail",
+                      "available"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "pricePence",
+                "lowPence",
+                "highPence"
+              ]
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "model",
+          "modelVersion",
+          "generatedAt",
+          "issuedAt",
+          "referenceDate",
+          "series",
+          "unit",
+          "history",
+          "points",
+          "warnings"
         ]
       },
       "PhoneNumber": {
@@ -2239,7 +2413,8 @@
               "type": "string",
               "enum": [
                 "daily",
-                "hourly"
+                "hourly",
+                "models"
               ]
             },
             "required": true,
@@ -2327,6 +2502,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data unavailable or stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forecast/weekly": {
+      "get": {
+        "operationId": "getWeeklyOutlook",
+        "tags": [
+          "Market"
+        ],
+        "summary": "Official sales-weighted UK weekly petrol outlook",
+        "responses": {
+          "200": {
+            "description": "Next two official weekly observations; never a daily forecast",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyOutlook"
                 }
               }
             }

@@ -1,6 +1,16 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { dataJob, nationalPrice, station, syncState } from "../lib/db/schema";
+import {
+  dataJob,
+  nationalPrice,
+  station,
+  syncState,
+  modelPumpEvent,
+  modelPrice,
+  modelSettlementEvent,
+  modelFxRate,
+  forecastRun,
+} from "../lib/db/schema";
 import { sql } from "drizzle-orm";
 import { createDb } from "../lib/db/db.service";
 import { createApp } from "./app";
@@ -86,7 +96,7 @@ async function login(phone: string) {
 beforeAll(async () => {
   await migrate(db, { migrationsFolder: "./drizzle" });
   await db.execute(
-    sql`TRUNCATE "user",session,account,verification,rate_limit,driver,sms_message,market_observation,data_job,exchange_rate,futures_settlement,national_price,station,station_price,sync_state,tracked_station CASCADE`,
+    sql`TRUNCATE "user",session,account,verification,rate_limit,driver,sms_message,market_observation,data_job,exchange_rate,futures_settlement,national_price,station,station_price,sync_state,tracked_station,model_price,model_pump_event,model_settlement_event,model_fx_rate,forecast_run CASCADE`,
   );
 }, 30_000);
 afterAll(async () => {
@@ -456,6 +466,7 @@ describe.sequential(
       const response = {
         start: now.toISOString().slice(0, 10),
         end: now.toISOString().slice(0, 10),
+        events: [],
         settlements: [
           {
             product: "B7H" as const,
@@ -531,6 +542,138 @@ describe.sequential(
       expect((await req("/api/v1/alerts/evaluate", "POST")).status).toBe(403);
       expect((await req("/api/auth/sign-out", "POST", {})).status).toBe(200);
       expect((await req("/api/v1/me/dashboard")).status).toBe(401);
+    });
+    it("freezes the daily snapshot and excludes future, stale and invalid station updates", async () => {
+      await db.execute(
+        sql`TRUNCATE model_pump_event, model_price, model_settlement_event, model_fx_rate, forecast_run`,
+      );
+      const cutoff = new Date("2026-09-18T08:00:00Z"),
+        received = new Date("2026-09-18T07:10:00Z");
+      const event = (
+        stationId: string,
+        source: string,
+        pricePence: number | null,
+        availableAt = received,
+      ) => ({
+        stationId,
+        sourceAt: new Date(source),
+        receivedAt: availableAt,
+        availableAt,
+        pricePence,
+        source: "fuel-finder",
+      });
+      await db
+        .insert(modelPumpEvent)
+        .values([
+          event("a", "2026-09-18T06:00:00Z", 150),
+          event("b", "2026-09-18T06:00:00Z", 160),
+          event(
+            "a",
+            "2026-09-17T06:00:00Z",
+            500,
+            new Date("2026-09-18T07:20:00Z"),
+          ),
+          event(
+            "a",
+            "2026-09-18T09:00:00Z",
+            300,
+            new Date("2026-09-18T09:00:00Z"),
+          ),
+          event("c", "2026-09-18T06:00:00Z", null),
+        ]);
+      await db
+        .insert(dataJob)
+        .values({
+          key: "fuel-finder:model-test",
+          status: "complete",
+          startedAt: received,
+          finishedAt: received,
+        });
+      const i = buildInjector(config, () => new Date("2026-09-18T08:05:00Z"));
+      try {
+        await i.resolve("modelDataService").snapshot();
+        expect(
+          (
+            await db.query.modelPrice.findFirst({
+              where: { frequency: "daily", date: "2026-09-18" },
+            })
+          )?.pricePence,
+        ).toBe(155);
+        await db
+          .insert(modelPumpEvent)
+          .values(
+            event(
+              "a",
+              "2026-09-18T07:30:00Z",
+              400,
+              new Date("2026-09-18T08:01:00Z"),
+            ),
+          );
+        expect((await i.resolve("modelDataService").snapshot()).created).toBe(
+          false,
+        );
+        expect(
+          (
+            await db.query.modelPrice.findFirst({
+              where: { frequency: "daily", date: "2026-09-18" },
+            })
+          )?.pricePence,
+        ).toBe(155);
+        await db
+          .insert(modelPrice)
+          .values([
+            {
+              frequency: "daily",
+              date: "2026-09-04",
+              availableAt: new Date("2026-09-04T08:00:00Z"),
+              pricePence: 151,
+              source: "fuelcosts-archive",
+            },
+          ]);
+        for (const product of ["B7H", "BZ"] as const)
+          await db
+            .insert(modelSettlementEvent)
+            .values(
+              [0, 7, 14, 28].map((lag) => ({
+                product,
+                symbol: product + "-test",
+                date: new Date(+cutoff - (lag + 1) * 86400000)
+                  .toISOString()
+                  .slice(0, 10),
+                publishedAt: new Date(+cutoff - 3600000),
+                expiresAt: new Date("2026-12-01T00:00:00Z"),
+                priceUsd: product === "B7H" ? 1000 - lag : 80 - lag / 10,
+              })),
+            );
+        await db
+          .insert(modelFxRate)
+          .values(
+            [0, 7, 14, 28].map((lag) => ({
+              date: new Date(+cutoff - (lag + 1) * 86400000)
+                .toISOString()
+                .slice(0, 10),
+              availableAt: new Date(+cutoff - 3600000),
+              usdPerGbp: 1.3,
+            })),
+          );
+        const first = await i.resolve("modelService").daily();
+        expect(first.model).toBe("daily-ridge");
+        expect(first.points).toHaveLength(15);
+        await db
+          .insert(modelSettlementEvent)
+          .values({
+            product: "B7H",
+            symbol: "B7H-test",
+            date: "2026-09-17",
+            publishedAt: new Date("2026-09-18T07:59:00Z"),
+            expiresAt: new Date("2026-12-01T00:00:00Z"),
+            priceUsd: 2000,
+          });
+        expect(await i.resolve("modelService").daily()).toEqual(first);
+        expect(await db.query.forecastRun.findMany()).toHaveLength(1);
+      } finally {
+        await i.dispose();
+      }
     });
     it("rate limits OTP requests across request-scoped auth instances", async () => {
       const send = () =>

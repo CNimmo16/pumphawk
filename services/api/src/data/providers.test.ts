@@ -126,15 +126,27 @@ describe("provider normalization", () => {
     ).toBe(true);
   });
   it("fails closed on cost limits without downloading paid data", async () => {
-    const http = vi.fn(
-      async () => new Response("0.26"),
+    const http = vi.fn(async (url: string) =>
+      url.includes("get_dataset_range")
+        ? Response.json({
+            schema: {
+              statistics: { end: now.toISOString() },
+              definition: { end: now.toISOString() },
+            },
+          })
+        : new Response("0.26"),
     ) as unknown as HttpClient;
     const service = new DatabentoService(
       { databentoApiKey: "test" } as Config,
       http,
     );
     await expect(service.daily(now, false)).rejects.toThrow("$0.25");
-    expect(http).toHaveBeenCalledTimes(1);
+    expect(http).toHaveBeenCalledTimes(2);
+    expect(
+      vi
+        .mocked(http)
+        .mock.calls.every(([url]) => !String(url).includes("timeseries")),
+    ).toBe(true);
   });
   it("bounds upstream bodies and does not expose token-bearing error bodies", async () => {
     await expect(

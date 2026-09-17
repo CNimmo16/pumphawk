@@ -57,7 +57,7 @@ describe("14-day stored-data forecast", () => {
       flat.points[14]!.pricePence,
     );
     const s = b7h.points[14]!.signals!;
-    expect(s[1]!.weight / s[2]!.weight).toBeCloseTo(4, 2);
+    expect(s[1]!.weight! / s[2]!.weight!).toBeCloseTo(4, 2);
   });
   it("converts each observation into GBP so a weaker pound lifts import costs", () => {
     const fx = rates.map((r, i) => ({ ...r, usdPerGbp: 1.4 - i * 0.01 }));

@@ -5,12 +5,14 @@ import type { Config } from "../app/config";
 import type { Observation } from "@pump-hawk/contracts";
 import { AppError } from "../app/errors";
 import { demoObservations, forecastPrices, isoDay } from "./forecast";
+import { ModelService } from "./model.service";
 export class MarketService {
-  static inject = ["dbService", "config", "clock"] as const;
+  static inject = ["dbService", "config", "clock", "modelService"] as const;
   constructor(
     private store: DbService,
     private config: Config,
     private clock: () => Date,
+    private model: ModelService,
   ) {}
   async forecast() {
     const now = this.clock();
@@ -27,6 +29,16 @@ export class MarketService {
     const includeSamples =
       this.config.environment === "development" &&
       this.config.marketDataMode === "sample";
+    let fallbackReason: string | undefined;
+    if (!includeSamples) {
+      try {
+        return await this.model.daily();
+      } catch (error) {
+        if (!(error instanceof AppError) || !error.code.startsWith("MODEL_"))
+          throw error;
+        fallbackReason = error.message;
+      }
+    }
     const [pumps, settlements, rates] = await Promise.all([
       this.store.db.query.nationalPrice.findMany({
         where: {
@@ -38,6 +50,7 @@ export class MarketService {
       }),
       this.store.db.query.futuresSettlement.findMany({
         where: {
+          publishedAt: { lte: now },
           date: {
             gte: new Date(+now - 45 * 86400000).toISOString().slice(0, 10),
           },
@@ -49,13 +62,18 @@ export class MarketService {
         limit: 45,
       }),
     ]);
-    return liveForecast(
+    const forecast = liveForecast(
       pumps,
       settlements,
       rates,
       now,
       pumps.some((p) => p.source === "sample") ? "sample" : "live",
     );
+    forecast.model = "heuristic";
+    forecast.adviceHorizonDays = 7;
+    if (fallbackReason)
+      forecast.warnings.unshift(`Heuristic fallback: ${fallbackReason}`);
+    return forecast;
   }
 
   async ingest(source: string, observations: Observation[]) {

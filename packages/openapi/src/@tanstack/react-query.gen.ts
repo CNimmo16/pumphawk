@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { evaluateAlerts, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, ingestObservations, type Options, saveDriver, saveOnboarding, sendPhoneOtp, signOut, syncData, updateTank, verifyPhoneOtp } from '../sdk.gen';
-import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SendPhoneOtpData, SendPhoneOtpError, SendPhoneOtpResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, VerifyPhoneOtpData, VerifyPhoneOtpError, VerifyPhoneOtpResponse } from '../types.gen';
+import { evaluateAlerts, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getWeeklyOutlook, ingestObservations, type Options, saveDriver, saveOnboarding, sendPhoneOtp, signOut, syncData, updateTank, verifyPhoneOtp } from '../sdk.gen';
+import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SendPhoneOtpData, SendPhoneOtpError, SendPhoneOtpResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, VerifyPhoneOtpData, VerifyPhoneOtpError, VerifyPhoneOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -293,6 +293,24 @@ export const syncDataMutation = (options?: Partial<Options<SyncDataData>>): UseM
     };
     return mutationOptions;
 };
+
+export const getWeeklyOutlookQueryKey = (options?: Options<GetWeeklyOutlookData>) => createQueryKey('getWeeklyOutlook', options);
+
+/**
+ * Official sales-weighted UK weekly petrol outlook
+ */
+export const getWeeklyOutlookOptions = (options?: Options<GetWeeklyOutlookData>) => queryOptions<GetWeeklyOutlookResponse, GetWeeklyOutlookError, GetWeeklyOutlookResponse, ReturnType<typeof getWeeklyOutlookQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getWeeklyOutlook({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getWeeklyOutlookQueryKey(options)
+});
 
 /**
  * Send a six-digit phone verification code

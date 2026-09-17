@@ -2,7 +2,7 @@
 
 A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth phone login, typed-inject services and a generated Hey API/TanStack Query client.
 
-**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS verification is still a stub. Nothing has been deployed to Cloudflare.
+**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS verification is still a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
 
 ## Run locally
 
@@ -26,7 +26,7 @@ FUEL_FINDER_CLIENT_SECRET=...
 Then:
 
 ```sh
-pnpm data:sync daily          # initial 35-day futures/FX backfill; later runs overlap 7 days
+pnpm data:sync daily          # initial 40-day futures/FX backfill; later runs overlap 7 days
 pnpm data:sync hourly         # initial station catalogue and current E10 prices
 pnpm dev                     # API, frontend and local data scheduler
 ```
@@ -60,7 +60,7 @@ Set `MARKET_DATA_MODE=sample` in `services/api/.dev.vars` and restart the API de
 | ------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
 | Petrol futures            | Databento `GLBX.MDP3`, `B7H.FUT` definitions, outright settlement statistics | Contract, reference date, USD/tonne price, expiry, publication/download timestamps | Daily, 08:00 UTC |
 | Brent crude futures       | Databento `GLBX.MDP3`, `BZ.FUT`                                              | Same fields, USD/barrel                                                            | Same daily job   |
-| GBP/USD                   | ECB reference rates via Frankfurter                                          | USD per GBP by date                                                                | Same daily job   |
+| GBP/USD                   | ECB reference rates via the ECB API                                          | USD per GBP by date                                                                | Same daily job   |
 | Forecourts and E10 prices | Government Fuel Finder read-only API                                         | Current station details and latest reported price                                  | Hourly at :10    |
 | National E10 average      | Mean of open reporting Fuel Finder stations                                  | One observation per UK day, updated during the day, sample size                    | Hourly           |
 | Tracked price history     | Current Fuel Finder observations                                             | One observation per tracked station per successful hourly job                      | Hourly           |
@@ -68,8 +68,8 @@ Set `MARKET_DATA_MODE=sample` in `services/api/.dev.vars` and restart the API de
 ### Download behaviour
 
 - Browser requests only read stored market/station prices; they never download paid futures data.
-- Discover the three nearest unexpired outright B7H and BZ contracts, then download final settlement statistics. Ignore spread contracts, preliminary/intraday prices and price limits. The first run requests 35 days; later daily runs overlap seven days. Download intervals end at the latest completed UTC day.
-- A metadata estimate checks each Databento request before download, failing closed above **$0.25 per request** (up to two downloads per daily job). There are no live subscriptions or vendor requests. Credentials go only to the intended provider and are never logged.
+- Discover the three nearest unexpired outright B7H and BZ contracts, then download final settlement statistics. Ignore spread contracts, preliminary/intraday prices and price limits. The first run requests 40 days; later daily runs overlap seven days. Download intervals end at collection time; model features filter publication timestamps to their fixed forecast origin. Historical definitions are downloaded for the same contract interval.
+- A metadata estimate checks each Databento request before download, failing closed above **$0.25 per request** (up to three downloads per daily job). There are no live subscriptions or vendor requests. Credentials go only to the intended provider and are never logged.
 - Fuel Finder uses one OAuth token per hourly run, sequential paginated calls (500 forecourts per batch), incremental timestamps with a one-hour overlap, and a full refresh each new UK day. The live API host is `https://www.fuel-finder.service.gov.uk`.
 - Provider responses have timeouts, size limits and validation. Station catalogue updates, prices, hourly tracked observations, the national average and watermark commit together. Failed runs retain the last committed data.
 - PostgreSQL `data_job` primary keys claim a UTC day/hour before contacting providers. Concurrent invocations and repeat dashboard visits cannot duplicate downloads. Failures remain recorded and retry at the next scheduled period. A stopped/interrupted job also waits until the next period; inspect `data_job` for operational status.
@@ -77,11 +77,21 @@ Set `MARKET_DATA_MODE=sample` in `services/api/.dev.vars` and restart the API de
 
 **Live history:** Fuel Finder's current-price feed does not provide a retroactive daily history. The initial import supplies today's actual national price. In live mode, the national chart reserves the past 14 days and fills them as observations accumulate; station charts start at the earliest collected observation, capped at 30 days. Synthetic development rows are excluded from live forecasts. Existing provider prices can contain reporting/location errors; displayed stations use the provider's coordinates.
 
+## Trained models
+
+The dashboard uses the daily ridge model for the 14-day road-ahead chart and a separate weekly Huber model for the official sales-weighted UK outlook. Daily buying advice evaluates meaningful savings over reachable dates in the next seven days; days 8–14 are informational. Tooltips show fitted pence-per-litre contributions. Empirical ranges are not guaranteed probabilities, especially at day 14.
+
+`pnpm data:bootstrap` imports genuine source-labelled daily/weekly history and the last-known observed-station baseline. It is idempotent and preserves existing observations. For local use of previously downloaded research markets, run `pnpm --filter @pump-hawk/api exec node --import tsx scripts/import-market-history.ts`. Production obtains market inputs through its daily provider job. `pnpm data:sync models` refreshes model observations and materialises forecasts; browser requests never contact data providers.
+
+Model inputs live in append-only event tables and immutable 08:00 UTC daily snapshots. The daily observed-station proxy is separate from the hourly open-station average and the official weekly sales-weighted series. Each issued forecast retains its model version, input vector and predictions. Missing required model inputs produce an explicitly labelled heuristic fallback on the daily endpoint; weekly unavailability is reported directly.
+
+The public `GET /api/v1/forecast/weekly` endpoint returns only the next two official observation forecasts. `POST /api/v1/data/sync/models` is protected by the ingestion key. Python/TypeScript parity and as-of timing are tested. See [full model evaluation](ml/TRAINING_RESULTS.md).
+
 ## Forecast and fuel policy
 
 The supplied research and exact assumptions are in [PRICES.md](./PRICES.md), referenced by the business logic.
 
-The next day's recent pump momentum gets 90% weight once five daily changes are available, falling to about 10% by day 14. Remaining weight goes 80/20 to GBP-converted B7H/Brent signals. Comparing the same futures contract across time avoids rollover jumps. Missing/stale signals are disabled and reduce certainty. Faster rises and slower cuts follow the supplied research. Ranges are illustrative, not calibrated confidence intervals; the model has not been backtested.
+For the labelled heuristic fallback, the next day's recent pump momentum gets 90% weight once five daily changes are available, falling to about 10% by day 14. Remaining weight goes 80/20 to GBP-converted B7H/Brent signals. Comparing the same futures contract across time avoids rollover jumps. Missing/stale signals are disabled and reduce certainty. Faster rises and slower cuts follow the supplied research. Ranges are illustrative, not calibrated confidence intervals; this fallback has not been fitted; the primary models have separate held-out evaluations.
 
 Fuel planning uses the actual weekday schedule, imperial MPG and the last gauge reading. It keeps at least 5L or 10% of capacity in reserve, chooses reachable fill dates and caps purchases at free capacity. Readings over seven days old require an update. National average prices are not quotes for a particular station.
 
@@ -154,12 +164,8 @@ pnpm format:check
 
 Integration tests migrate/reset only the dedicated `pumphawk_test` database. Custom `TEST_DATABASE_URL` must end in `_test`.
 
-## Cloudflare deployment / future PlanetScale PostgreSQL
+## Production deployment
 
-1. Provision reachable PostgreSQL, run migrations with its `DATABASE_URL` and create Hyperdrive with query caching disabled for application/auth data. Replace the local all-zero Hyperdrive ID.
-2. Set production `ENVIRONMENT`, `APP_ORIGIN` and `BETTER_AUTH_URL` to the web HTTPS origin; keep `MARKET_DATA_MODE=live`.
-3. Store `BETTER_AUTH_SECRET`, `INGEST_API_KEY`, `DATABENTO_API_KEY`, `FUEL_FINDER_CLIENT_ID`, `FUEL_FINDER_CLIENT_SECRET` as API Worker secrets. `.dev.vars` is local only.
-4. Connect real SMS verification, then deploy the API and web Workers. Keep the web service binding aligned with `pump-hawk-api`.
-5. The checked-in daily/hourly cron triggers run in UTC. Bootstrap with the protected sync endpoints and monitor `data_job` plus Worker scheduled-event logs. Do not run the local scheduler against production concurrently.
+The [CI/deployment workflow](.github/workflows/production.yml) runs generated-contract checks, TypeScript, unit tests, PostgreSQL integration tests and Worker builds. Main-branch deployments migrate PostgreSQL, import genuine history, deploy the API and web Workers, bootstrap feeds and verify that both model endpoints are live.
 
-Local PostgreSQL is the only configured database. The app has been built for Workers but has not been deployed; no production resource IDs or PlanetScale-specific SDK assumptions are hardcoded.
+See [PRODUCTION.md](PRODUCTION.md) for required GitHub secrets, account/Hyperdrive configuration, smoke checks and rollback. Production uses reachable PostgreSQL via Hyperdrive with query caching disabled. The local all-zero Hyperdrive ID is never used for deployment.
