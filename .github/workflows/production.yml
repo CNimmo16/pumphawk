@@ -48,6 +48,7 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: validate
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 25
     concurrency:

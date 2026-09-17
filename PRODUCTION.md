@@ -4,7 +4,7 @@ Pushes to `main` run `.github/workflows/production.yml`. Pull requests run valid
 
 ## GitHub configuration
 
-Repository: `CNimmo16/pumphawk`.
+Repository: `CNimmo16/pumphawk`. The deployment job uses the GitHub environment `production`. Add production secrets and variables under **Settings → Environments → production**. Repository-level values remain available as fallbacks; environment-level values take precedence.
 
 | Encrypted secret            | Purpose                                                                     |
 | --------------------------- | --------------------------------------------------------------------------- |
