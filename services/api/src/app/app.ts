@@ -1,3 +1,4 @@
+import { errorDiagnostic } from "../lib/telemetry/error";
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { secureHeaders } from "hono/secure-headers";
@@ -188,7 +189,12 @@ export function createApp(
       JSON.stringify({
         event: "request_failed",
         path: c.req.path,
-        error: error.name,
+        error: errorDiagnostic(
+          error,
+          Object.values(options.config ?? c.env ?? {}).filter(
+            (v): v is string => typeof v === "string" && v.length > 12,
+          ),
+        ),
       }),
     );
     return c.json(
