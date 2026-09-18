@@ -82,12 +82,42 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Resolve production account, database and origin
         run: node scripts/production-config.mjs
+        env:
+          POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+          POSTHOG_CLI_TOKEN: ${{ secrets.POSTHOG_CLI_TOKEN }}
+      - name: Build API Worker with source maps
+        run: pnpm --filter @pump-hawk/api exec wrangler deploy --dry-run --outdir dist --upload-source-maps --config wrangler.production.json
+      - name: Build web Worker with source maps
+        run: pnpm --filter @pump-hawk/web build
+      - name: Inject and upload API source maps to PostHog
+        if: env.POSTHOG_PROJECT_TOKEN != ''
+        uses: PostHog/upload-source-maps@v0.5.7.0
+        with:
+          directory: services/api/dist
+          env-id: ${{ vars.POSTHOG_PROJECT_ID }}
+          cli-token: ${{ secrets.POSTHOG_CLI_TOKEN }}
+          host: ${{ env.POSTHOG_HOST == 'https://eu.i.posthog.com' && 'https://eu.posthog.com' || 'https://us.posthog.com' }}
+          project: pump-hawk-api
+          version: ${{ github.sha }}
+      - name: Inject and upload web source maps to PostHog
+        if: env.POSTHOG_PROJECT_TOKEN != ''
+        uses: PostHog/upload-source-maps@v0.5.7.0
+        with:
+          directory: apps/web/dist
+          env-id: ${{ vars.POSTHOG_PROJECT_ID }}
+          cli-token: ${{ secrets.POSTHOG_CLI_TOKEN }}
+          host: ${{ env.POSTHOG_HOST == 'https://eu.i.posthog.com' && 'https://eu.posthog.com' || 'https://us.posthog.com' }}
+          project: pump-hawk-web
+          version: ${{ github.sha }}
+      - name: Remove browser source maps before deployment
+        run: find apps/web/dist/client -type f -name '*.map' -delete
       - name: Apply database migrations and genuine history
         run: |
           pnpm db:migrate
           pnpm data:bootstrap
       - name: Deploy API Worker
-        run: pnpm --filter @pump-hawk/api exec wrangler deploy --config wrangler.production.json
+        # Deploy the injected bundle unchanged so its frames match the uploaded maps.
+        run: pnpm --filter @pump-hawk/api exec wrangler deploy dist/index.js --no-bundle --upload-source-maps --config wrangler.production.json
       - name: Configure API secrets
         run: node scripts/production-secrets.mjs
         env:
@@ -97,10 +127,8 @@ jobs:
           FUEL_FINDER_CLIENT_ID: ${{ secrets.FUEL_FINDER_CLIENT_ID }}
           FUEL_FINDER_CLIENT_SECRET: ${{ secrets.FUEL_FINDER_CLIENT_SECRET }}
           ONE_AUTO_API_KEY: ${{ secrets.ONE_AUTO_API_KEY }}
-      - name: Build and deploy web Worker
-        run: |
-          pnpm --filter @pump-hawk/web build
-          pnpm --filter @pump-hawk/web exec wrangler deploy
+      - name: Deploy web Worker
+        run: pnpm --filter @pump-hawk/web exec wrangler deploy --no-bundle
       - name: Verify deployed application
         run: |
           curl --fail --retry 6 --retry-all-errors --retry-delay 10 "$PRODUCTION_ORIGIN/api/health"

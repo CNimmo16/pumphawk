@@ -79,6 +79,16 @@ if (
   throw new Error(
     "POSTHOG_HOST must be the EU or US PostHog ingestion origin.",
   );
+if (process.env.POSTHOG_PROJECT_TOKEN) {
+  if (!/^\d+$/.test(process.env.POSTHOG_PROJECT_ID || ""))
+    throw new Error(
+      "Add GitHub production environment variable POSTHOG_PROJECT_ID for PostHog source-map uploads.",
+    );
+  if (!process.env.POSTHOG_CLI_TOKEN)
+    throw new Error(
+      "Add GitHub production environment secret POSTHOG_CLI_TOKEN for PostHog source-map uploads.",
+    );
+}
 const config = {
   name: "pump-hawk-api",
   account_id: account,

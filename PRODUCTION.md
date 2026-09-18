@@ -9,6 +9,7 @@ Repository: `CNimmo16/pumphawk`. The deployment job uses the GitHub environment 
 | Encrypted secret            | Purpose                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------- |
 | `CLOUDFLARE_API_TOKEN`      | Deploy Workers                                                                        |
+| `POSTHOG_CLI_TOKEN`         | Upload source maps; required when PostHog error capture is enabled                     |
 | `DATABASE_URL`              | Neon pooled PostgreSQL URI (hostname contains `-pooler`) for the Worker and bootstrap |
 | `DIRECT_DATABASE_URL`       | Neon direct PostgreSQL URI for migrations; same branch/database, pooling disabled     |
 | `BETTER_AUTH_SECRET`        | Production session signing; at least 32 random characters                             |
@@ -51,9 +52,10 @@ The existing Postgres.js driver connects over TCP with `nodejs_compat`; Drizzle 
 
 1. Resolve the account and origin; validate both production database URLs and refuse localhost.
 2. Generate the ignored `services/api/wrangler.production.json` with production origins and live-data mode.
-3. Run forward database migrations and idempotently import genuine daily/weekly history and observed-station state. No user accounts or station selections are replaced.
-4. Deploy `pump-hawk-api`, upload its secrets, build/deploy `pump-hawk-web` with the API service binding.
-5. Check the public page and API health; bootstrap daily market and hourly station collection, refresh models, then require `daily-ridge` and `weekly-huber` responses from the two production endpoints. A heuristic fallback does not pass this smoke check.
+3. Build both Workers with source maps. When PostHog is enabled, inject bundle identifiers and upload the maps before deploying. Remove browser `.map` files from the public assets.
+4. Run forward database migrations and idempotently import genuine daily/weekly history and observed-station state. No user accounts or station selections are replaced.
+5. Deploy the injected `pump-hawk-api` bundle without rebuilding, upload its secrets, then deploy the built `pump-hawk-web` with the API service binding.
+6. Check the public page and API health; bootstrap daily market and hourly station collection, refresh models, then require `daily-ridge` and `weekly-huber` responses from the two production endpoints. A heuristic fallback does not pass this smoke check.
 
 On later deployments, successful daily/hourly collection slots are reused. Failed data jobs remain recorded; inspect the provider failure before retrying. The production bootstrap source cutoff and archive revisions are embedded in `services/api/data/*.json`. Refresh this genuine archive if first deployment is delayed beyond the daily model's freshness window. Never shift old observations to today's date.
 
@@ -74,10 +76,15 @@ Set these **variables** in the GitHub `production` environment to enable error c
 
 - `POSTHOG_PROJECT_TOKEN`: the chosen project's public ingestion token (`phc_…`), **not** a personal API token.
 - `POSTHOG_HOST`: `https://eu.i.posthog.com` for EU or `https://us.i.posthog.com` for US; match the project's region.
+- `POSTHOG_PROJECT_ID`: the numeric ID of that same project, used to upload source maps.
 
-Both are optional together. Without them, errors remain in Cloudflare's structured logs. The workflow passes the token/host to the API Worker and the browser build and tags events with the Git commit. The browser token is public by design. No session replay, pageview analytics, person profiles, or click autocapture is enabled. Errors are sanitized, and browser event properties are restricted to an allowlist; request bodies, headers, user IDs, phone numbers, coordinates and SQL parameters are not attached.
+Also add the **secret** `POSTHOG_CLI_TOKEN`: a PostHog personal API key with **error tracking write** and **organization read** scopes for that project. It is used only by the deployment job, never passed to a Worker or the browser. The workflow uses the same `PostHog/upload-source-maps@v0.5.7.0` action and input names as Waxly's app-stack workflow. Uploads go to `https://eu.posthog.com` or `https://us.posthog.com`, derived from the ingestion host.
 
-API failures and scheduled sync errors use a per-invocation PostHog client with bounded delivery time. Browser uncaught errors, rejected promises, React route-boundary errors and failed queries/mutations are captured. Source-map upload to PostHog and web Worker SSR error capture are not configured yet. Verify ingestion with a controlled error after selecting the project; integration is disabled until the variables are supplied.
+PostHog remains optional: leave the ingestion token and host unset to keep errors in Cloudflare's structured logs only. When enabled, the deployment requires the project ID and upload secret before migrations or deployment, and source-map upload failures stop deployment. The workflow passes the ingestion token/host to the API Worker and browser build and tags events and source maps with the Git commit. The browser token is public by design. No session replay, pageview analytics, person profiles, or click autocapture is enabled. Errors are sanitized, and browser event properties are restricted to an allowlist; request bodies, headers, user IDs, phone numbers, coordinates and SQL parameters are not attached. Stack frames retain script origins, paths, line numbers and column numbers for source-map resolution; URL credentials, queries and fragments are removed.
+
+API failures and scheduled sync errors use a per-invocation PostHog client with bounded delivery time. Browser uncaught errors, rejected promises, React route-boundary errors and failed queries/mutations are captured. Both builds generate source maps; the workflow injects and uploads them to PostHog, removes browser maps from `dist/client`, and deploys the same bundles without rebuilding. Worker maps remain available for Cloudflare's private source-map upload. Web Worker SSR error capture is not configured yet.
+
+After deployment, verify the uploaded symbol sets in the selected PostHog project's Error tracking settings, then capture a controlled browser/API error and check that its stack resolves to the original TypeScript source. See [PostHog's source-map upload guidance](https://posthog.com/docs/error-tracking/upload-source-maps/github-actions).
 
 Provider requests use manual redirects, reject non-success statuses, and never forward credentials to a redirect target. Daily/hourly sync claims permit at most three attempts per period, only retry failed jobs, and never repeat a completed download. Running or exhausted jobs return `SYNC_UNAVAILABLE` rather than falsely reporting success. Inspect Cloudflare/PostHog before any manual recovery of exhausted/stuck jobs; retries can incur additional Databento download charges (each download remains cost-capped).
 

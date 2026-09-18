@@ -182,6 +182,24 @@ describe("provider normalization", () => {
       ),
     ).rejects.toThrow("download limit");
   });
+  it("bounds inspected error bodies and keeps unrecognized errors sanitized", async () => {
+    const recover = vi.fn(() => undefined);
+    const http = vi.fn(
+      async () => new Response("secret-token", { status: 404 }),
+    );
+    await expect(
+      providerText(http, "https://example.com", {}, 100, undefined, recover),
+    ).rejects.toMatchObject({
+      code: "PROVIDER_ERROR",
+      message: "example.com returned HTTP 404.",
+    });
+    expect(recover).toHaveBeenCalledWith(404, "secret-token");
+    recover.mockClear();
+    await expect(
+      providerText(http, "https://example.com", {}, 3, undefined, recover),
+    ).rejects.toThrow("download limit");
+    expect(recover).not.toHaveBeenCalled();
+  });
   it("reuses one token across paginated station/price calls with the incremental watermark", async () => {
     const calls: string[] = [];
     const http = vi.fn(async (input: RequestInfo | URL) => {
@@ -211,4 +229,81 @@ describe("provider normalization", () => {
       "effective-start-timestamp=2026-09-16+12%3A00%3A00",
     );
   });
+});
+
+// Actual Fuel Finder response when an incremental query has no matching batch.
+function unavailableBatch(page: number) {
+  return {
+    success: false,
+    data: {
+      success: false,
+      data: { message: `Requested batch ${page} is not available` },
+      message: "An error occurred",
+      error: { code: 404, details: "Error in API call" },
+    },
+    message: { code: 404, details: "Error in API call" },
+    error: {
+      code: 404,
+      details: { code: 404, details: "Error in API call" },
+    },
+  };
+}
+
+describe("Fuel Finder empty batches", () => {
+  it.each(["stations", "prices"] as const)(
+    "accepts an empty first incremental %s batch",
+    async (kind) => {
+      const http = vi.fn(async () =>
+        Response.json(unavailableBatch(1), { status: 404 }),
+      );
+      const service = new FuelFinderService({} as Config, http);
+      const pages = [];
+      for await (const page of service.pages("test-token", kind, now))
+        pages.push(page);
+      expect(pages.flat()).toEqual([]);
+      expect(http).toHaveBeenCalledTimes(1);
+    },
+  );
+  it.each(["stations", "prices"] as const)(
+    "retains a full %s batch when the next batch is unavailable",
+    async (kind) => {
+      const rows = Array.from({ length: 500 }, (_, i) => ({ node_id: `${i}` }));
+      const http = vi
+        .fn()
+        .mockResolvedValueOnce(Response.json(rows))
+        .mockResolvedValueOnce(
+          Response.json(unavailableBatch(2), { status: 404 }),
+        );
+      const service = new FuelFinderService({} as Config, http);
+      const pages = [];
+      for await (const page of service.pages("test-token", kind))
+        pages.push(page);
+      expect(pages.flat()).toEqual(rows);
+      expect(http).toHaveBeenCalledTimes(2);
+      expect(String(http.mock.calls[1]?.[0])).toContain("batch-number=2");
+    },
+  );
+  it.each([
+    { status: 404, body: null, since: now },
+    { status: 404, body: "<html>Not found</html>", since: now },
+    { status: 404, body: JSON.stringify({ message: "Not found" }), since: now },
+    { status: 404, body: JSON.stringify(unavailableBatch(2)), since: now },
+    { status: 403, body: JSON.stringify(unavailableBatch(1)), since: now },
+    { status: 500, body: JSON.stringify(unavailableBatch(1)), since: now },
+    {
+      status: 404,
+      body: JSON.stringify(unavailableBatch(1)),
+      since: undefined,
+    },
+  ])(
+    "preserves other provider failures: %j",
+    async ({ status, body, since }) => {
+      const http = vi.fn(async () => new Response(body, { status }));
+      const service = new FuelFinderService({} as Config, http);
+      await expect(
+        service.pages("test-token", "stations", since).next(),
+      ).rejects.toThrow(`HTTP ${status}`);
+      expect(http).toHaveBeenCalledTimes(1);
+    },
+  );
 });

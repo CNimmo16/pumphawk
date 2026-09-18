@@ -3,6 +3,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 export default defineConfig({
+  build: { sourcemap: true },
   server: {
     port: 3100,
     strictPort: true,

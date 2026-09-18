@@ -146,6 +146,24 @@ export class FuelFinderService {
           url.toString(),
           { headers: { Authorization: `Bearer ${token}` } },
           5_000_000,
+          undefined,
+          (status, body) => {
+            // Empty incremental batches and exhausted pagination return 404, not [].
+            // Keep missing full feeds and unrelated 404s as failures.
+            if (status !== 404 || (!since && page === 1)) return;
+            try {
+              const error = JSON.parse(body);
+              if (
+                error?.success === false &&
+                error?.data?.success === false &&
+                error?.data?.data?.message ===
+                  `Requested batch ${page} is not available`
+              )
+                return "[]";
+            } catch {
+              // Non-JSON errors retain the sanitized provider HTTP error.
+            }
+          },
         ),
       );
       if (!Array.isArray(response))

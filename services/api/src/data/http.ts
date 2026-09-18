@@ -7,6 +7,8 @@ export async function providerText(
   init: RequestInit = {},
   maxBytes = 24_000_000,
   timeoutMs = 45_000,
+  // Map a recognized provider error to a normal body; undefined keeps the HTTP error.
+  recoverHttpError?: (status: number, body: string) => string | undefined,
 ) {
   const response = await http(url, {
     ...init,
@@ -14,20 +16,26 @@ export async function providerText(
     redirect: "manual",
     signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!response.ok) {
+  const httpError = response.ok
+    ? undefined
+    : new AppError(
+        "PROVIDER_ERROR",
+        `${new URL(url).hostname} returned HTTP ${response.status}.`,
+        503,
+      );
+  if (httpError && !recoverHttpError) {
     await response.body?.cancel();
-    throw new AppError(
-      "PROVIDER_ERROR",
-      `${new URL(url).hostname} returned HTTP ${response.status}.`,
-      503,
-    );
+    throw httpError;
   }
   const reader = response.body?.getReader();
   if (!reader)
-    throw new AppError(
-      "PROVIDER_EMPTY",
-      "The data provider returned no response.",
-      503,
+    throw (
+      httpError ??
+      new AppError(
+        "PROVIDER_EMPTY",
+        "The data provider returned no response.",
+        503,
+      )
     );
   const decoder = new TextDecoder();
   let result = "",
@@ -50,7 +58,13 @@ export async function providerText(
   } finally {
     reader.releaseLock();
   }
-  return result + decoder.decode();
+  const body = result + decoder.decode();
+  if (httpError) {
+    const recovered = recoverHttpError?.(response.status, body);
+    if (recovered === undefined) throw httpError;
+    return recovered;
+  }
+  return body;
 }
 // RFC 4180 parser for Databento's header-based CSV output, including quoted commas/newlines.
 export function parseCsv(text: string): Record<string, string>[] {
