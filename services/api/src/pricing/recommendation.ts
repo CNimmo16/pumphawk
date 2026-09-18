@@ -1,4 +1,9 @@
-import type { Driver, Forecast, Recommendation } from "@pump-hawk/contracts";
+import type {
+  Driver,
+  Forecast,
+  Recommendation,
+  WeeklyOutlook,
+} from "@pump-hawk/contracts";
 import { DAY, addDays, isoDay, round } from "./forecast";
 const displayDay = (day: string) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -63,6 +68,7 @@ export function recommend(
   driver: Driver,
   forecast: Forecast,
   now: Date,
+  weekly?: WeeklyOutlook,
 ): Recommendation {
   const { dailyLitres, ageDays, current, reserve } = fuelState(driver, now);
   const space = Math.max(0, driver.tankCapacityLitres - current),
@@ -139,6 +145,39 @@ export function recommend(
     nextNeeded &&
     nextNeeded.pricePence - forecast.currentPricePence >= 0.5 &&
     ((nextNeeded.pricePence - forecast.currentPricePence) * space) / 100 >= 1;
+  // PRICES.md: the weekly benchmark can justify buying ahead of a later rise,
+  // even with ample fuel. Compare its own observations, never daily/weekly levels.
+  const weeklyAnchor = weekly?.history.find(
+    (p) => p.date === weekly.referenceDate,
+  );
+  const weeklyPoints = [...(weekly?.points ?? [])].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+  const weeklyRise =
+    forecast.mode === "live" &&
+    weekly &&
+    weeklyAnchor &&
+    +now >= Date.parse(weekly.issuedAt) &&
+    +now - Date.parse(weekly.issuedAt) <= 8 * DAY
+      ? weeklyPoints.flatMap((point, index) => {
+          const previous = weeklyPoints[index - 1] ?? weeklyAnchor;
+          // Don't count a rebound from a predicted dip as a rise above the latest
+          // observed benchmark, or count the earlier predicted rise twice.
+          const baseline =
+            previous.pricePence > weeklyAnchor.pricePence
+              ? previous
+              : weeklyAnchor;
+          const change = point.pricePence - baseline.pricePence;
+          const saving =
+            (change * (Math.floor((space + 1e-9) * 10) / 10)) / 100;
+          return point.date > today &&
+            point.date > addDays(forecast.asOf, 7) &&
+            change >= 0.5 &&
+            saving >= 1
+            ? [{ date: point.date, from: baseline.date, change, saving }]
+            : [];
+        })[0]
+      : undefined;
   let result: Recommendation;
   if (ageDays > 7)
     result = make(
@@ -174,6 +213,7 @@ export function recommend(
         nextFillDate: best.date,
         targetPricePence: best.pricePence,
         estimatedSavingsGbp: round(best.saving),
+        priceSignal: "daily",
       },
     );
   else if (forecast.model === "daily-ridge" && risingBeforeNeeded)
@@ -182,6 +222,22 @@ export function recommend(
       "Get ahead of your next needed fill",
       "The model expects a meaningful rise before you need fuel within the next seven days. Filling now may help; reassess daily.",
       space,
+      {
+        priceSignal: "daily",
+        estimatedSavingsGbp: round(
+          ((nextNeeded!.pricePence - forecast.currentPricePence) *
+            (Math.floor((space + 1e-9) * 10) / 10)) /
+            100,
+        ),
+      },
+    );
+  else if (weeklyRise)
+    result = make(
+      "fill-now",
+      "Fill before the weekly rise",
+      `The weekly UK outlook predicts a ${weeklyRise.change.toFixed(2)}p/L rise from ${displayDay(weeklyRise.from)} to ${displayDay(weeklyRise.date)}. Fill the available space now, even with fuel in reserve. This is a national signal; your station's price may differ.`,
+      space,
+      { priceSignal: "weekly", estimatedSavingsGbp: round(weeklyRise.saving) },
     );
   else if (
     forecast.model !== "daily-ridge" &&
@@ -249,14 +305,14 @@ export function recommend(
     result = make(
       "top-up",
       "Time for a practical top-up",
-      "Keep your reserve and top up for your next journeys. There is no strong price signal.",
+      "Keep your reserve and top up for your next journeys. Reassess prices before a larger fill.",
       Math.max(0, reserve + plannedLitres(driver, today, 3) - current),
     );
   else
     result = make(
       "hold",
       "You’re in a good place",
-      "There is no strong price signal, and you have fuel in reserve. Check back as the market changes.",
+      "You have fuel in reserve. The available forecasts do not currently justify an earlier fill-up. Reassess tomorrow.",
       0,
     );
   result.estimatedCostGbp = round(

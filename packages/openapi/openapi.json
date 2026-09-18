@@ -453,6 +453,14 @@
           "estimatedSavingsGbp": {
             "type": "number"
           },
+          "priceSignal": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ],
+            "description": "Forecast supplying the price-timing decision. Weekly savings use the change within the official benchmark, not a local station quote."
+          },
           "fillDate": {
             "type": "string",
             "format": "date"

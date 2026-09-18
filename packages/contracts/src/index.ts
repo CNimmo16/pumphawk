@@ -126,6 +126,12 @@ export const RecommendationSchema = z
     litresToBuy: z.number(),
     estimatedCostGbp: z.number(),
     estimatedSavingsGbp: z.number(),
+    priceSignal: z
+      .enum(["daily", "weekly"])
+      .optional()
+      .describe(
+        "Forecast supplying the price-timing decision. Weekly savings use the change within the official benchmark, not a local station quote.",
+      ),
     fillDate: z.iso.date(),
     nextFillDate: z.iso.date(),
     estimatedCurrentLitres: z.number(),

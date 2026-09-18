@@ -9,7 +9,7 @@ Repository: `CNimmo16/pumphawk`. The deployment job uses the GitHub environment 
 | Encrypted secret            | Purpose                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------- |
 | `CLOUDFLARE_API_TOKEN`      | Deploy Workers                                                                        |
-| `POSTHOG_CLI_TOKEN`         | Upload source maps; required when PostHog error capture is enabled                     |
+| `POSTHOG_CLI_TOKEN`         | Upload source maps; required when PostHog error capture is enabled                    |
 | `DATABASE_URL`              | Neon pooled PostgreSQL URI (hostname contains `-pooler`) for the Worker and bootstrap |
 | `DIRECT_DATABASE_URL`       | Neon direct PostgreSQL URI for migrations; same branch/database, pooling disabled     |
 | `BETTER_AUTH_SECRET`        | Production session signing; at least 32 random characters                             |
@@ -81,7 +81,7 @@ On 18 September 2026, production's last daily observation was 16 September and a
 - Fuel Finder: hourly at :10; all eligible station observations are retained for model snapshots, while tracked-station charts keep their normal hourly history.
 - Models: 08:05 UTC; daily snapshots freeze information available strictly before 08:00. The weekly origin stays at the conservative Thursday 08:00 cutoff. Dashboard requests can materialise a missing forecast from stored inputs without provider calls.
 - `forecast_run` preserves each model version's features and results at each origin. Compare future observations against these immutable runs rather than recomputing past forecasts with corrected inputs.
-- Daily buying advice uses seven forecast days and explicit 0.5p/L / £1 materiality thresholds. Days 8–14 are informational; the daily 14-day band is not calibrated to 90% coverage.
+- Daily buying advice uses seven forecast days and explicit 0.5p/L / £1 materiality thresholds. The weekly outlook can trigger an early fill ahead of a later material rise, even if fuel is not needed within seven days. Dashboard, recommendation API and SMS evaluation share these inputs and rules. Days 8–14 of the daily model remain informational; its 14-day band is not calibrated to 90% coverage.
 - Sign-in uses Google OAuth. SMS alerts retain their database-backed stub, opt-in flags and verified notification numbers; phone authentication and development OTP routes are removed. Google users do not need a phone number to access their car or dashboard.
 
 Roll back a faulty Worker version with Wrangler or the Cloudflare dashboard, then rerun the deployment smoke checks. These database migrations are additive. Do not drop new tables during an application rollback or delete issued forecasts to make monitoring look better.

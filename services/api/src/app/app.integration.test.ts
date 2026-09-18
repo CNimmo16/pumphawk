@@ -18,13 +18,21 @@ import { createDb } from "../lib/db/db.service";
 import { createApp } from "./app";
 import { buildInjector } from "./injector";
 import { ConfigSchema, type Config } from "./config";
-import { demoObservations, isoDay } from "../pricing/forecast";
+import {
+  addDays,
+  demoObservations,
+  forecastPrices,
+  isoDay,
+} from "../pricing/forecast";
 import { seedSampleHistory } from "../pricing/sample-history";
+import { ModelService } from "../pricing/model.service";
+import { AppError } from "./errors";
 import {
   DashboardSchema,
   ForecastSchema,
   SmsSchema,
   z,
+  type WeeklyOutlook,
 } from "@pump-hawk/contracts";
 const databaseUrl =
   process.env.TEST_DATABASE_URL ??
@@ -769,6 +777,100 @@ describe.sequential(
         expect((await i.resolve("syncService").hourly()).skipped).toBe(true);
         expect(await db.query.stationPrice.findMany()).toHaveLength(count);
       } finally {
+        await i.dispose();
+      }
+    });
+    it("uses the weekly outlook consistently in the dashboard, recommendation and SMS paths", async () => {
+      expect(
+        (
+          await req("/api/v1/me/driver", "PUT", {
+            ...car,
+            currentLitres: 20,
+            mpg: 40,
+            dailyMiles: 5,
+          })
+        ).status,
+      ).toBe(200);
+      const today = isoDay(now);
+      const daily = forecastPrices(demoObservations(now), now, "live", "test");
+      daily.model = "daily-ridge";
+      daily.direction = daily.signal = "rising";
+      daily.points = daily.points.slice(0, 15).map((p, index) => ({
+        ...p,
+        pricePence: daily.currentPricePence + index * 0.5,
+      }));
+      const weekly: WeeklyOutlook = {
+        model: "weekly-huber",
+        modelVersion: "test",
+        generatedAt: now.toISOString(),
+        issuedAt: now.toISOString(),
+        referenceDate: addDays(today, -4),
+        series: "Official DESNZ sales-weighted petrol",
+        unit: "pence/litre",
+        history: [{ date: addDays(today, -4), pricePence: 169 }],
+        points: [
+          {
+            date: addDays(today, 3),
+            pricePence: 171.9,
+            lowPence: 169,
+            highPence: 174,
+          },
+          {
+            date: addDays(today, 10),
+            pricePence: 175.29,
+            lowPence: 170,
+            highPence: 180,
+          },
+        ],
+        warnings: [],
+      };
+      const dailyModel = vi
+        .spyOn(ModelService.prototype, "daily")
+        .mockResolvedValue(daily);
+      const weeklyModel = vi
+        .spyOn(ModelService.prototype, "weekly")
+        .mockResolvedValue(weekly);
+      const liveConfig: Config = { ...config, marketDataMode: "live" };
+      const live = createApp({ config: liveConfig, clock: () => now });
+      const request = (path: string) =>
+        live.request("http://localhost:3100" + path, {
+          headers: { ...headers, cookie },
+        });
+      const i = buildInjector(liveConfig, () => now);
+      try {
+        const dashboardResponse = await request("/api/v1/me/dashboard");
+        expect(dashboardResponse.status).toBe(200);
+        const dashboard = DashboardSchema.parse(await dashboardResponse.json());
+        expect(dashboard.recommendation).toMatchObject({
+          action: "fill-now",
+          priceSignal: "weekly",
+          litresToBuy: 30,
+          estimatedSavingsGbp: 1.02,
+        });
+        const recommendation = await request("/api/v1/me/recommendation");
+        expect(recommendation.status).toBe(200);
+        expect(await recommendation.json()).toEqual(dashboard.recommendation);
+        const send = vi.spyOn(i.resolve("smsService"), "send");
+        await i.resolve("alertService").evaluate();
+        expect(
+          send.mock.calls.some(
+            ([message]) =>
+              message.kind === "fill-alert" &&
+              message.body.includes("Fill before the weekly rise") &&
+              message.body.includes("30.0L"),
+          ),
+        ).toBe(true);
+        weeklyModel.mockRejectedValue(
+          new AppError("MODEL_NOT_READY", "Weekly inputs unavailable", 503),
+        );
+        const degraded = await request("/api/v1/me/dashboard");
+        expect(degraded.status).toBe(200);
+        expect(
+          DashboardSchema.parse(await degraded.json()).recommendation,
+        ).toMatchObject({ action: "hold" });
+      } finally {
+        dailyModel.mockRestore();
+        weeklyModel.mockRestore();
         await i.dispose();
       }
     });

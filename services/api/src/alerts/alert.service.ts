@@ -31,7 +31,7 @@ export class AlertService {
   ) {}
   async evaluate() {
     const now = this.clock(),
-      forecast = await this.market.forecast();
+      { forecast, weekly } = await this.market.forecastsForAdvice();
     let sent = 0,
       checked = 0,
       cursor: string | undefined;
@@ -50,7 +50,7 @@ export class AlertService {
       for (const row of drivers) {
         checked++;
         if (!row.user.phoneNumberVerified || !row.user.phoneNumber) continue;
-        const advice = recommend(serializeDriver(row), forecast, now);
+        const advice = recommend(serializeDriver(row), forecast, now, weekly);
         if (
           !["fill-now", "top-up"].includes(advice.action) ||
           advice.litresToBuy < 0.1

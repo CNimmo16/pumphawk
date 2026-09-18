@@ -2,7 +2,7 @@ import { liveForecast } from "./live-forecast";
 import { DbService } from "../lib/db/db.service";
 import { marketObservation } from "../lib/db/schema";
 import type { Config } from "../app/config";
-import type { Observation } from "@pump-hawk/contracts";
+import type { Observation, WeeklyOutlook } from "@pump-hawk/contracts";
 import { AppError } from "../app/errors";
 import { demoObservations, forecastPrices, isoDay } from "./forecast";
 import { ModelService } from "./model.service";
@@ -14,6 +14,20 @@ export class MarketService {
     private clock: () => Date,
     private model: ModelService,
   ) {}
+  async forecastsForAdvice() {
+    const forecast = await this.forecast();
+    let weekly: WeeklyOutlook | undefined;
+    // Demo/sample decisions must never silently use genuine production signals.
+    if (forecast.mode === "live") {
+      try {
+        weekly = await this.model.weekly();
+      } catch (error) {
+        if (!(error instanceof AppError) || !error.code.startsWith("MODEL_"))
+          throw error;
+      }
+    }
+    return { forecast, weekly };
+  }
   async forecast() {
     const now = this.clock();
     if (this.config.marketDataMode === "demo") {

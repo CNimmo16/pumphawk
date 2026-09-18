@@ -350,9 +350,11 @@ export function createApp(
     async (c) => {
       const i = c.get("injector");
       const driver = await i.resolve("driverService").get(c.get("userId"));
-      let forecast;
+      let forecast, weekly;
       try {
-        forecast = await i.resolve("marketService").forecast();
+        ({ forecast, weekly } = await i
+          .resolve("marketService")
+          .forecastsForAdvice());
       } catch (error) {
         if (error instanceof AppError && error.status === 503)
           return c.json(
@@ -370,7 +372,12 @@ export function createApp(
         {
           driver,
           forecast,
-          recommendation: recommend(driver, forecast, i.resolve("clock")()),
+          recommendation: recommend(
+            driver,
+            forecast,
+            i.resolve("clock")(),
+            weekly,
+          ),
         },
         200,
       );
@@ -390,11 +397,15 @@ export function createApp(
     }),
     async (c) => {
       const i = c.get("injector");
+      const { forecast, weekly } = await i
+        .resolve("marketService")
+        .forecastsForAdvice();
       return c.json(
         recommend(
           await i.resolve("driverService").get(c.get("userId")),
-          await i.resolve("marketService").forecast(),
+          forecast,
           i.resolve("clock")(),
+          weekly,
         ),
         200,
       );

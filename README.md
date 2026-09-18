@@ -83,7 +83,7 @@ Set `MARKET_DATA_MODE=sample` in `services/api/.dev.vars` and restart the API de
 
 ## Trained models
 
-The dashboard uses the daily ridge model for the 14-day road-ahead chart and a separate weekly Huber model for the official sales-weighted UK outlook. Daily buying advice evaluates meaningful savings over reachable dates in the next seven days; days 8–14 are informational. Tooltips show fitted pence-per-litre contributions. Empirical ranges are not guaranteed probabilities, especially at day 14.
+The dashboard uses the daily ridge model for the 14-day road-ahead chart and a separate weekly Huber model for the official sales-weighted UK outlook. Daily buying advice evaluates meaningful savings over reachable dates in the next seven days; days 8–14 from that model are informational. A meaningful later rise in the separate weekly outlook can recommend an early fill even with plenty of fuel remaining. A worthwhile short-term dip takes priority; weekly predictions are never interpolated into daily prices. Tooltips show fitted pence-per-litre contributions. Empirical ranges are not guaranteed probabilities, especially at day 14.
 
 `pnpm data:bootstrap` imports genuine source-labelled daily/weekly history and the last-known observed-station baseline. It is idempotent and preserves existing observations. For local use of previously downloaded research markets, run `pnpm --filter @pump-hawk/api exec node --import tsx scripts/import-market-history.ts`. Production obtains market inputs through its daily provider job. `pnpm data:sync models` refreshes model observations and materialises forecasts; browser requests never contact data providers.
 

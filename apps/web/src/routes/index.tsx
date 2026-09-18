@@ -414,7 +414,11 @@ function Dashboard() {
                           £{advice.estimatedSavingsGbp.toFixed(2)}
                         </strong>
                         <span className="stat-note">
-                          On fuel you defer buying
+                          {advice.priceSignal === "weekly"
+                            ? "If the weekly UK rise reaches your station"
+                            : advice.action === "fill-now"
+                              ? "If prices rise as forecast"
+                              : "On fuel you defer buying"}
                         </span>
                       </div>
                     </div>
@@ -449,7 +453,7 @@ function Dashboard() {
                         {forecast.mode === "sample"
                           ? "Includes synthetic local pump history. "
                           : forecast?.model === "daily-ridge"
-                            ? "Observed-station average, fixed at 08:00 UTC. Buying advice uses the next seven days; days 8–14 are a longer-term outlook. "
+                            ? "Observed-station average, fixed at 08:00 UTC. Daily timing uses the first seven forecast days; the separate weekly outlook can recommend filling ahead of a later rise. "
                             : "Heuristic fallback using the live open-station average. "}
                         Shading is an empirical or illustrative range, not a
                         guaranteed probability.

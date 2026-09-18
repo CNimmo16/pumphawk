@@ -94,6 +94,10 @@ export type Recommendation = {
     litresToBuy: number;
     estimatedCostGbp: number;
     estimatedSavingsGbp: number;
+    /**
+     * Forecast supplying the price-timing decision. Weekly savings use the change within the official benchmark, not a local station quote.
+     */
+    priceSignal?: 'daily' | 'weekly';
     fillDate: string;
     nextFillDate: string;
     estimatedCurrentLitres: number;
