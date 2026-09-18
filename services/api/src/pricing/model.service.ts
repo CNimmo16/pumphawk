@@ -33,7 +33,7 @@ export class ModelService {
     )
       throw new AppError(
         "MODEL_NOT_READY",
-        `A fresh ${frequency} model observation is not yet available.`,
+        `A fresh ${frequency} model observation is not yet available. Latest snapshot: ${anchor?.availableAt.toISOString() ?? "none"}; maximum age: ${frequency === "daily" ? 48 : 192} hours.`,
         503,
       );
     const origin = anchor.availableAt;

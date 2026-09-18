@@ -1448,6 +1448,14 @@
       "pricePence": 170.955,
       "stationCount": 7994,
       "source": "fuelcosts-archive"
+    },
+    {
+      "frequency": "daily",
+      "date": "2026-09-17",
+      "availableAt": "2026-09-17T08:00:00+00:00",
+      "pricePence": 171.457,
+      "stationCount": 7998,
+      "source": "fuelcosts-archive"
     }
   ],
   "productionExtension": [
@@ -1460,6 +1468,20 @@
       "file": "price_history.csv",
       "revision": "06a5ef426aa67bf1a27eeb8395ac60c377ec539e",
       "sha256": "df6ed79b885105eecbf2cdbe05257290a38b7befba0dff51a437a2894de8b965"
+    }
+  ],
+  "backfills": [
+    {
+      "revision": "9975b48c037a6f4c3b7c40c385b2688c0041b9b7",
+      "url": "https://huggingface.co/datasets/jamesb7/fuel-prices-uk/tree/9975b48c037a6f4c3b7c40c385b2688c0041b9b7",
+      "sha256": {
+        "stations.csv": "a5208309464fc119a8e9139607aefc4c30732a3546a6ccbef1e50eff11aed1b3",
+        "price_history.csv": "57d2921a9edbafa36baa0a35c4d3707538f0a2a94476a8d25c8d23e953472742"
+      },
+      "method": "Training aggregation: equal-station E10; max(recorded, source) strictly before 08:00 UTC; last partial London day excluded.",
+      "firstDate": "2026-09-17",
+      "lastDate": "2026-09-17",
+      "observations": 1
     }
   ]
 }

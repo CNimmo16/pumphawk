@@ -10,7 +10,7 @@ for (const kind of ["daily", "hourly", "models"]) {
   const result = await response.json();
   if (!response.ok)
     throw new Error(
-      `${kind} bootstrap failed: ${result.error?.code ?? response.status}`,
+      `${kind} bootstrap failed: ${result.error?.code ?? response.status}${result.error?.message ? ` — ${result.error.message}` : ""}`,
     );
   console.log(`${kind}: ${result.skipped ? "already collected" : "complete"}`);
 }

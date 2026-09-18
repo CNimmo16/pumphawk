@@ -3,6 +3,26 @@ from pathlib import Path
 import pandas as pd
 
 from scripts import prepare
+from scripts.backfill_daily import append_snapshots
+
+
+def test_archive_backfill_appends_without_revising_history_and_is_idempotent():
+    existing = dict(frequency='daily', date='2026-09-16', pricePence=150,
+                    source='fuel-finder-observed')
+    history = {'prices': [existing.copy()]}
+    snapshots = pd.DataFrame([
+        dict(date='2026-09-16', available_at='2026-09-16T08:00:00+00:00',
+             price=999, station_count=7000),
+        dict(date='2026-09-17', available_at='2026-09-17T08:00:00+00:00',
+             price=151, station_count=8000),
+    ])
+    added = append_snapshots(history, snapshots, {'revision': 'pinned-export'})
+    assert history['prices'][0] == existing
+    assert added == [dict(frequency='daily', date='2026-09-17',
+                          availableAt='2026-09-17T08:00:00+00:00', pricePence=151,
+                          stationCount=8000, source='fuelcosts-archive')]
+    assert append_snapshots(history, snapshots, {'revision': 'pinned-export'}) == []
+    assert len(history['backfills']) == 1
 
 
 def test_daily_snapshots_respect_availability_stale_updates_and_first_seen(tmp_path, monkeypatch):

@@ -20,11 +20,13 @@ def utc(value):
     return pd.to_datetime(value, utc=True, format='mixed')
 
 
-def daily_prices():
-    station = pd.read_csv(ROOT / '.local/fuelcosts/stations.csv').set_index('node_id')
+def daily_prices(source=None, destination=None):
+    source = source if source is not None else ROOT / '.local/fuelcosts'
+    destination = destination if destination is not None else OUT
+    station = pd.read_csv(source / 'stations.csv').set_index('node_id')
     coords = station.latitude.between(49, 61) & station.longitude.between(-9, 3)
     eligible = set(station[coords].index)
-    rows = pd.read_csv(ROOT / '.local/fuelcosts/price_history.csv')
+    rows = pd.read_csv(source / 'price_history.csv')
     rows = rows[rows.fuel_type == 'E10'].copy()
     rows['recorded'] = utc(rows.recorded_at)
     rows['source'] = utc(rows.source_updated_at)
@@ -33,7 +35,7 @@ def daily_prices():
              'source_timestamp_policy': 'Available at max(recorded_at, source_updated_at); never move observations backwards.',
              'historical_closures': 'Unavailable; target is an equal-station observed-price proxy, not exact open-station membership.'}
     rows = rows[rows.source.notna() & rows.node_id.isin(eligible)].sort_values(['available', 'id'])
-    # Last partial London day is excluded. Last fully observed day is 2026-09-15.
+    # Exclude the last partial London day; never extend an archive to today's date.
     last_full = rows.recorded.max().tz_convert('Europe/London').normalize().date() - pd.Timedelta(days=1)
     days = pd.date_range('2026-02-08', str(last_full), freq='D')
     events = iter(rows.itertuples())
@@ -64,11 +66,11 @@ def daily_prices():
                            current_open_sensitivity_price=float(np.mean(current_open)),
                            available_at=cutoff.isoformat()))
     result = pd.DataFrame(output)
-    result.to_csv(OUT / 'daily-prices.csv', index=False)
+    result.to_csv(destination / 'daily-prices.csv', index=False)
     audit.update(stale_source_updates_ignored=stale_updates, invalid_events=invalid, days=len(result),
                  first_date=result.date.iloc[0], last_date=result.date.iloc[-1], initial_cohort=len(cohort),
                  primary_vs_fixed_mean_absolute_gap=float(abs(result.price - result.fixed_cohort_price).mean()))
-    (OUT / 'daily-audit.json').write_text(json.dumps(audit, indent=2))
+    (destination / 'daily-audit.json').write_text(json.dumps(audit, indent=2))
     return result
 
 

@@ -59,6 +59,22 @@ The existing Postgres.js driver connects over TCP with `nodejs_compat`; Drizzle 
 
 On later deployments, successful daily/hourly collection slots are reused. Failed data jobs remain recorded; inspect the provider failure before retrying. The production bootstrap source cutoff and archive revisions are embedded in `services/api/data/*.json`. Refresh this genuine archive if first deployment is delayed beyond the daily model's freshness window. Never shift old observations to today's date.
 
+### Recovering a missed daily snapshot
+
+The daily model accepts an anchor at most 48 hours old. A successful hourly sync after 08:00 UTC cannot replace a failed collection before that cutoff. If no recent archive is available either, model bootstrap returns `SNAPSHOT_FEED_STALE` with the missing cutoff; the smoke check prints that explanation. Keep this failure visible rather than relaxing freshness checks or accepting the heuristic as a trained-model success.
+
+To recover from a longer collection outage, download `stations.csv` and `price_history.csv` from one **pinned commit** of [FuelCosts' public archive](https://huggingface.co/datasets/jamesb7/fuel-prices-uk) into `.local/fuelcosts-backfill/<revision>/`. Then run, using the ML Python environment:
+
+```sh
+PYTHONPATH=ml .local/ml-venv/bin/python -m scripts.backfill_daily \
+  --revision <40-character-commit> \
+  --archive-dir .local/fuelcosts-backfill/<revision>
+```
+
+Review the appended observations and provenance in `services/api/data/model-history.json`, then deploy normally. The existing bootstrap imports missing rows with `ON CONFLICT DO NOTHING`. The exporter reuses training's equal-station E10 calculation, honours both source and observation timestamps, excludes the final partial London day, and records file hashes. It leaves existing observations, forecast runs, fitted models and research datasets unchanged. Raw downloads stay outside git. This is an explicit maintenance backfill, not another scheduled provider download.
+
+On 18 September 2026, production's last daily observation was 16 September and all 06:00–08:00 collections had failed. Recovery appended the genuine 17 September snapshot from archive revision `9975b48c037a6f4c3b7c40c385b2688c0041b9b7`. The archive does not cover today's cutoff, so no 18 September snapshot was invented. Normal collection supplies the next daily snapshot after recovery.
+
 ## Operations
 
 - Markets: once daily at 08:00 UTC; final settlements and definitions, up to 40 days on first import, seven-day overlap afterward. Each provider request has a $0.25 quote cap; no subscriptions are purchased.

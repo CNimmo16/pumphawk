@@ -899,6 +899,47 @@ describe.sequential(
         await i.dispose();
       }
     });
+    it("reports the missing pre-cutoff feed when archived model inputs have expired", async () => {
+      const clock = () => new Date("2026-09-21T12:00:00Z");
+      const i = buildInjector(config, clock);
+      try {
+        await expect(i.resolve("modelService").daily()).rejects.toMatchObject({
+          code: "MODEL_NOT_READY",
+          message: expect.stringContaining("2026-09-18T08:00:00.000Z"),
+        });
+      } finally {
+        await i.dispose();
+      }
+      const http = vi.fn(
+        async (input: RequestInfo | URL) =>
+          new Response(
+            String(input).endsWith(".csv")
+              ? "Date,Petrol\n14/09/2026,150.23\n"
+              : '<a href="https://assets.publishing.service.gov.uk/2018.csv">Prices</a>',
+          ),
+      );
+      const bootstrap = createApp({ config, clock, httpClient: http });
+      const response = await bootstrap.request(
+        "http://localhost:3100/api/v1/data/sync/models",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${config.ingestApiKey}` },
+        },
+      );
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: {
+          code: "SNAPSHOT_FEED_STALE",
+          message: expect.stringContaining("2026-09-21T08:00:00.000Z"),
+        },
+      });
+      expect(http).toHaveBeenCalledTimes(2);
+      expect(
+        await db.query.modelPrice.findFirst({
+          where: { frequency: "daily", date: "2026-09-21" },
+        }),
+      ).toBeUndefined();
+    });
     it("rate limits Google sign-in across request-scoped auth instances", async () => {
       const send = () =>
         app.request("http://localhost:3100/api/auth/sign-in/social", {

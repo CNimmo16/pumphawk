@@ -672,6 +672,7 @@ export function createApp(
         await data.weekly();
         // On first deployment, archived genuine snapshots can precede the first
         // local collection. Keep them until a complete pre-cutoff collection exists.
+        let snapshotError: AppError | undefined;
         try {
           await data.snapshot();
         } catch (error) {
@@ -680,8 +681,21 @@ export function createApp(
             error.code !== "SNAPSHOT_FEED_STALE"
           )
             throw error;
+          snapshotError = error;
         }
-        const daily = await i.resolve("modelService").daily();
+        const daily = await i
+          .resolve("modelService")
+          .daily()
+          .catch((error: unknown) => {
+            // Preserve the actionable collection failure if the archive is also stale.
+            if (
+              snapshotError &&
+              error instanceof AppError &&
+              error.code === "MODEL_NOT_READY"
+            )
+              throw snapshotError;
+            throw error;
+          });
         const weekly = await i.resolve("modelService").weekly();
         return c.json(
           {

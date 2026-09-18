@@ -62,7 +62,7 @@ export class ModelDataService {
     if (!job)
       throw new AppError(
         "SNAPSHOT_FEED_STALE",
-        "No completed Fuel Finder collection immediately before the 08:00 UTC cutoff.",
+        `No completed Fuel Finder collection in the two hours before ${cutoff.toISOString()}. Backfill genuine archived snapshots or wait for the next cutoff after collection recovers; later feed data cannot be backdated.`,
         503,
       );
     // DISTINCT ON and AVG belong in SQL: scanning every station event into a Worker is unbounded.
