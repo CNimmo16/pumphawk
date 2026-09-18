@@ -12,6 +12,8 @@ Repository: `CNimmo16/pumphawk`. The deployment job uses the GitHub environment 
 | `DATABASE_URL`              | Neon pooled PostgreSQL URI (hostname contains `-pooler`) for the Worker and bootstrap |
 | `DIRECT_DATABASE_URL`       | Neon direct PostgreSQL URI for migrations; same branch/database, pooling disabled     |
 | `BETTER_AUTH_SECRET`        | Production session signing; at least 32 random characters                             |
+| `GOOGLE_CLIENT_ID`          | Google OAuth Web application client ID                                                |
+| `GOOGLE_CLIENT_SECRET`      | Google OAuth client secret                                                            |
 | `INGEST_API_KEY`            | Protected collection/bootstrap endpoints; at least 24 random characters               |
 | `DATABENTO_API_KEY`         | Existing licensed B7H and BZ historical access                                        |
 | `FUEL_FINDER_CLIENT_ID`     | Government Fuel Finder client                                                         |
@@ -25,6 +27,19 @@ Optional repository variables:
 - `APP_ORIGIN`: HTTPS web origin. Defaults to `https://pump-hawk-web.<account-subdomain>.workers.dev`. A custom origin must already be routed to the web Worker.
 
 The token needs Workers Scripts edit and access to the account/subdomain APIs used by `scripts/production-config.mjs`. Restrict it to the intended account. The account must have a workers.dev subdomain. The PostgreSQL origin must accept Cloudflare connections; local Docker Postgres is not reachable by deployed Workers.
+
+## Google sign-in
+
+Create a **Web application** OAuth client in Google Cloud / Google Auth Platform, with these exact authorised redirect URIs:
+
+- Production: `https://pump-hawk-web.filodesign.workers.dev/api/auth/callback/google`
+- Local: `http://localhost:3100/api/auth/callback/google`
+
+For a custom domain, use `APP_ORIGIN` plus `/api/auth/callback/google`. The browser uses the web origin (port 3100 locally), which forwards `/api` to the API Worker. Add the client ID and secret to GitHub's `production` environment secrets as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; add local credentials to `services/api/.dev.vars`. Neither credential uses a `VITE_` prefix. The deployment checks for both before applying migrations or deploying Workers.
+
+Set up the Google consent screen for external users; while it is in testing mode, add the Google accounts that should be allowed to sign in as test users. Only the default `openid`, `email` and `profile` scopes are requested. Better Auth manages state, PKCE, the callback and HttpOnly session cookies. Cancelled sign-in returns to the app with a retry message. [Better Auth Google setup](https://better-auth.com/docs/authentication/google).
+
+No database migration is required: Better Auth's existing account/session tables support Google, and the notification phone fields are retained. Existing phone-only identities use placeholder emails and are not automatically merged into newly created Google identities; preserve their data and use an explicit identity-linking migration if needed.
 
 ## Neon connections
 
@@ -49,7 +64,7 @@ On later deployments, successful daily/hourly collection slots are reused. Faile
 - Models: 08:05 UTC; daily snapshots freeze information available strictly before 08:00. The weekly origin stays at the conservative Thursday 08:00 cutoff. Dashboard requests can materialise a missing forecast from stored inputs without provider calls.
 - `forecast_run` preserves each model version's features and results at each origin. Compare future observations against these immutable runs rather than recomputing past forecasts with corrected inputs.
 - Daily buying advice uses seven forecast days and explicit 0.5p/L / £1 materiality thresholds. Days 8–14 are informational; the daily 14-day band is not calibrated to 90% coverage.
-- SMS verification is still the existing database-backed stub. Production does not expose development OTPs; real phone signup needs a real SMS transport.
+- Sign-in uses Google OAuth. SMS alerts retain their database-backed stub, opt-in flags and verified notification numbers; phone authentication and development OTP routes are removed. Google users do not need a phone number to access their car or dashboard.
 
 Roll back a faulty Worker version with Wrangler or the Cloudflare dashboard, then rerun the deployment smoke checks. These database migrations are additive. Do not drop new tables during an application rollback or delete issued forecasts to make monitoring look better.
 

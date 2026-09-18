@@ -1,4 +1,7 @@
 BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters
+# Google OAuth web client: callback http://localhost:3100/api/auth/callback/google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 INGEST_API_KEY=replace-with-random-ingestion-key
 DATABASE_URL=postgres://pumphawk:pumphawk@127.0.0.1:55435/pumphawk
 

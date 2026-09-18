@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { evaluateAlerts, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getWeeklyOutlook, ingestObservations, type Options, saveDriver, saveOnboarding, sendPhoneOtp, signOut, syncData, updateTank, verifyPhoneOtp } from '../sdk.gen';
-import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SendPhoneOtpData, SendPhoneOtpError, SendPhoneOtpResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, VerifyPhoneOtpData, VerifyPhoneOtpError, VerifyPhoneOtpResponse } from '../types.gen';
+import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getWeeklyOutlook, ingestObservations, type Options, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank } from '../sdk.gen';
+import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -313,12 +313,14 @@ export const getWeeklyOutlookOptions = (options?: Options<GetWeeklyOutlookData>)
 });
 
 /**
- * Send a six-digit phone verification code
+ * Start Google sign-in or account creation
+ *
+ * Better Auth manages OAuth state, PKCE and the session cookie. Follow the returned authorization URL in the browser. Callback URLs must use APP_ORIGIN.
  */
-export const sendPhoneOtpMutation = (options?: Partial<Options<SendPhoneOtpData>>): UseMutationOptions<SendPhoneOtpResponse, SendPhoneOtpError, Options<SendPhoneOtpData>> => {
-    const mutationOptions: UseMutationOptions<SendPhoneOtpResponse, SendPhoneOtpError, Options<SendPhoneOtpData>> = {
+export const signInWithGoogleMutation = (options?: Partial<Options<SignInWithGoogleData>>): UseMutationOptions<SignInWithGoogleResponse, SignInWithGoogleError, Options<SignInWithGoogleData>> => {
+    const mutationOptions: UseMutationOptions<SignInWithGoogleResponse, SignInWithGoogleError, Options<SignInWithGoogleData>> = {
         mutationFn: async (fnOptions) => {
-            const { data } = await sendPhoneOtp({
+            const { data } = await signInWithGoogle({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -329,22 +331,23 @@ export const sendPhoneOtpMutation = (options?: Partial<Options<SendPhoneOtpData>
     return mutationOptions;
 };
 
+export const getApiAuthCallbackGoogleQueryKey = (options?: Options<GetApiAuthCallbackGoogleData>) => createQueryKey('getApiAuthCallbackGoogle', options);
+
 /**
- * Verify code; create account or sign in and set the session cookie
+ * Google OAuth callback (managed by Better Auth)
  */
-export const verifyPhoneOtpMutation = (options?: Partial<Options<VerifyPhoneOtpData>>): UseMutationOptions<VerifyPhoneOtpResponse, VerifyPhoneOtpError, Options<VerifyPhoneOtpData>> => {
-    const mutationOptions: UseMutationOptions<VerifyPhoneOtpResponse, VerifyPhoneOtpError, Options<VerifyPhoneOtpData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await verifyPhoneOtp({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
+export const getApiAuthCallbackGoogleOptions = (options?: Options<GetApiAuthCallbackGoogleData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getApiAuthCallbackGoogleQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getApiAuthCallbackGoogle({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getApiAuthCallbackGoogleQueryKey(options)
+});
 
 export const getSessionQueryKey = (options?: Options<GetSessionData>) => createQueryKey('getSession', options);
 

@@ -219,15 +219,17 @@ export type WeeklyOutlook = {
     warnings: Array<string>;
 };
 
-export type PhoneNumber = {
+export type GoogleSignIn = {
+    provider: 'google';
     /**
-     * UK mobile in E.164 format, e.g. +447700900123
+     * App URL after success, normally /
      */
-    phoneNumber: string;
-};
-
-export type VerifyPhone = PhoneNumber & {
-    code: string;
+    callbackURL?: string;
+    /**
+     * App URL after cancellation or failure
+     */
+    errorCallbackURL?: string;
+    disableRedirect?: boolean;
 };
 
 export type GetHealthData = {
@@ -261,7 +263,7 @@ export type GetForecastErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -310,7 +312,7 @@ export type GetDemoDashboardErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -359,7 +361,7 @@ export type GetDriverErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -408,7 +410,7 @@ export type SaveDriverErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -457,7 +459,7 @@ export type GetDashboardErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -506,7 +508,7 @@ export type GetRecommendationErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -555,7 +557,7 @@ export type GetMessagesErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -604,7 +606,7 @@ export type IngestObservationsErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -656,7 +658,7 @@ export type EvaluateAlertsErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -711,7 +713,7 @@ export type GetNearbyStationsErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -760,7 +762,7 @@ export type GetTrackedStationsErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -809,7 +811,7 @@ export type SaveOnboardingErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -858,7 +860,7 @@ export type UpdateTankErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -909,7 +911,7 @@ export type SyncDataErrors = {
      */
     400: ApiError;
     /**
-     * Phone verification and a session cookie are required
+     * A valid session cookie is required
      */
     401: ApiError;
     /**
@@ -974,18 +976,25 @@ export type GetWeeklyOutlookResponses = {
 
 export type GetWeeklyOutlookResponse = GetWeeklyOutlookResponses[keyof GetWeeklyOutlookResponses];
 
-export type SendPhoneOtpData = {
-    body: PhoneNumber;
+export type SignInWithGoogleData = {
+    body: GoogleSignIn;
     path?: never;
     query?: never;
-    url: '/api/auth/phone-number/send-otp';
+    url: '/api/auth/sign-in/social';
 };
 
-export type SendPhoneOtpErrors = {
+export type SignInWithGoogleErrors = {
     /**
-     * Invalid code or phone number
+     * Invalid sign-in request
      */
     400: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Untrusted origin or callback URL
+     */
+    403: {
         code: string;
         message: string;
     };
@@ -996,61 +1005,32 @@ export type SendPhoneOtpErrors = {
         code: string;
         message: string;
     };
+    /**
+     * Data unavailable or stale
+     */
+    503: ApiError;
 };
 
-export type SendPhoneOtpError = SendPhoneOtpErrors[keyof SendPhoneOtpErrors];
+export type SignInWithGoogleError = SignInWithGoogleErrors[keyof SignInWithGoogleErrors];
 
-export type SendPhoneOtpResponses = {
+export type SignInWithGoogleResponses = {
     /**
-     * Better Auth result; verification sets an HttpOnly cookie
+     * Google authorization URL
      */
     200: {
-        status?: boolean;
-        token?: string;
-        user?: unknown;
+        url: string;
+        redirect: boolean;
     };
 };
 
-export type SendPhoneOtpResponse = SendPhoneOtpResponses[keyof SendPhoneOtpResponses];
+export type SignInWithGoogleResponse = SignInWithGoogleResponses[keyof SignInWithGoogleResponses];
 
-export type VerifyPhoneOtpData = {
-    body: VerifyPhone;
+export type GetApiAuthCallbackGoogleData = {
+    body?: never;
     path?: never;
     query?: never;
-    url: '/api/auth/phone-number/verify';
+    url: '/api/auth/callback/google';
 };
-
-export type VerifyPhoneOtpErrors = {
-    /**
-     * Invalid code or phone number
-     */
-    400: {
-        code: string;
-        message: string;
-    };
-    /**
-     * Too many attempts
-     */
-    429: {
-        code: string;
-        message: string;
-    };
-};
-
-export type VerifyPhoneOtpError = VerifyPhoneOtpErrors[keyof VerifyPhoneOtpErrors];
-
-export type VerifyPhoneOtpResponses = {
-    /**
-     * Better Auth result; verification sets an HttpOnly cookie
-     */
-    200: {
-        status?: boolean;
-        token?: string;
-        user?: unknown;
-    };
-};
-
-export type VerifyPhoneOtpResponse = VerifyPhoneOtpResponses[keyof VerifyPhoneOtpResponses];
 
 export type GetSessionData = {
     body?: never;

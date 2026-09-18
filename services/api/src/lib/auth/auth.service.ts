@@ -1,11 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { phoneNumber } from "better-auth/plugins";
 import { DbService } from "../db/db.service";
 import * as schema from "../db/schema";
 import type { Config } from "../../app/config";
-import { SmsService } from "../sms/sms.service";
-export function createAuth(config: Config, store: DbService, sms: SmsService) {
+export function createAuth(config: Config, store: DbService) {
   return betterAuth({
     appName: "Pump Hawk",
     baseURL: config.authUrl,
@@ -18,7 +16,20 @@ export function createAuth(config: Config, store: DbService, sms: SmsService) {
     }),
     trustedOrigins: [config.appOrigin],
     emailAndPassword: { enabled: false },
+    socialProviders:
+      config.googleClientId && config.googleClientSecret
+        ? {
+            google: {
+              clientId: config.googleClientId,
+              clientSecret: config.googleClientSecret,
+              prompt: "select_account",
+              accessType: "online",
+            },
+          }
+        : {},
     advanced: {
+      disableOriginCheck: false,
+      disableCSRFCheck: false,
       useSecureCookies: config.environment === "production",
       ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     },
@@ -27,37 +38,14 @@ export function createAuth(config: Config, store: DbService, sms: SmsService) {
       storage: "database",
       window: 60,
       max: 60,
-      customRules: {
-        "/phone-number/send-otp": { window: 60, max: 3 },
-        "/phone-number/verify": { window: 60, max: 10 },
-      },
+      customRules: { "/sign-in/social": { window: 60, max: 10 } },
     },
-    plugins: [
-      phoneNumber({
-        otpLength: 6,
-        expiresIn: 300,
-        allowedAttempts: 5,
-        phoneNumberValidator: (phone) => /^\+447\d{9}$/.test(phone),
-        sendOTP: async ({ phoneNumber: phone, code }) => {
-          await sms.send({
-            to: phone,
-            kind: "otp",
-            body: `Your Pump Hawk code is ${code}. It expires in 5 minutes.`,
-            idempotencyKey: crypto.randomUUID(),
-          });
-        },
-        signUpOnVerification: {
-          getTempEmail: (phone) => `${phone.slice(1)}@phone.pumphawk.invalid`,
-          getTempName: () => "Driver",
-        },
-      }),
-    ],
   });
 }
 export class AuthService {
-  static inject = ["config", "dbService", "smsService"] as const;
+  static inject = ["config", "dbService"] as const;
   readonly auth: ReturnType<typeof createAuth>;
-  constructor(config: Config, store: DbService, sms: SmsService) {
-    this.auth = createAuth(config, store, sms);
+  constructor(config: Config, store: DbService) {
+    this.auth = createAuth(config, store);
   }
 }

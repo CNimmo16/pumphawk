@@ -1,6 +1,8 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { generateKeyPairSync, sign } from "node:crypto";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import {
+  user,
   dataJob,
   nationalPrice,
   station,
@@ -11,7 +13,7 @@ import {
   modelFxRate,
   forecastRun,
 } from "../lib/db/schema";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createDb } from "../lib/db/db.service";
 import { createApp } from "./app";
 import { buildInjector } from "./injector";
@@ -38,6 +40,8 @@ const config: Config = {
   appOrigin: "http://localhost:3100",
   authUrl: "http://localhost:3100",
   authSecret: "test-secret-longer-than-32-characters",
+  googleClientId: "test-google-client.apps.googleusercontent.com",
+  googleClientSecret: "test-google-secret",
   ingestApiKey: "test-ingestion-key-longer-than-24",
   databaseUrl,
   marketDataMode: "demo",
@@ -65,33 +69,97 @@ const req = (path: string, method = "GET", body?: unknown, session = cookie) =>
     headers: { ...headers, ...(session ? { cookie: session } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-async function login(phone: string) {
-  const sent = await req(
-    "/api/auth/phone-number/send-otp",
-    "POST",
-    { phoneNumber: phone },
-    "",
-  );
-  expect(sent.status, await sent.clone().text()).toBe(200);
-  const msg = await db.query.smsMessage.findFirst({
-    where: { phoneNumber: phone, kind: "otp" },
-    orderBy: { createdAt: "desc" },
-  });
-  expect(msg?.status).toBe("stubbed");
-  const code = msg!.body.match(/\b\d{6}\b/)![0];
-  const verified = await req(
-    "/api/auth/phone-number/verify",
-    "POST",
-    { phoneNumber: phone, code },
-    "",
-  );
-  expect(verified.status, await verified.clone().text()).toBe(200);
-  const session = verified.headers
+const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+  modulusLength: 2048,
+});
+const jwk = {
+  ...publicKey.export({ format: "jwk" }),
+  kid: "test-google-key",
+  alg: "RS256",
+  use: "sig",
+};
+function googleToken(subject: string) {
+  const encoded = (data: object) =>
+    Buffer.from(JSON.stringify(data)).toString("base64url");
+  const body = `${encoded({ alg: "RS256", kid: jwk.kid })}.${encoded({
+    sub: subject,
+    email: `${subject}@example.com`,
+    name: "Test driver",
+    email_verified: true,
+    iss: "https://accounts.google.com",
+    aud: config.googleClientId,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  })}`;
+  return `${body}.${sign("RSA-SHA256", Buffer.from(body), privateKey).toString("base64url")}`;
+}
+const cookies = (response: Response) =>
+  response.headers
     .getSetCookie()
     .map((c) => c.split(";")[0])
     .join("; ");
-  expect(session).toContain("session_token");
-  return { session, code };
+async function startGoogle() {
+  const response = await req(
+    "/api/auth/sign-in/social",
+    "POST",
+    {
+      provider: "google",
+      callbackURL: "/",
+      errorCallbackURL: "/?authError=google",
+    },
+    "",
+  );
+  expect(response.status, await response.clone().text()).toBe(200);
+  const data = (await response.json()) as { url: string };
+  const url = new URL(data.url);
+  expect(url.origin).toBe("https://accounts.google.com");
+  expect(url.searchParams.get("redirect_uri")).toBe(
+    "http://localhost:3100/api/auth/callback/google",
+  );
+  expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+  expect(url.searchParams.get("scope")?.split(" ").sort()).toEqual([
+    "email",
+    "openid",
+    "profile",
+  ]);
+  return { state: url.searchParams.get("state")!, cookie: cookies(response) };
+}
+async function login(subject: string) {
+  const started = await startGoogle();
+  const mock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "https://www.googleapis.com/oauth2/v3/certs")
+        return Response.json({ keys: [jwk] });
+      if (url === "https://oauth2.googleapis.com/token") {
+        const body = new URLSearchParams(String(init?.body));
+        expect(body.get("code")).toBe(`test-code-${subject}`);
+        expect(body.get("code_verifier")).toBeTruthy();
+        return Response.json({
+          access_token: "test-access",
+          token_type: "Bearer",
+          expires_in: 3600,
+          id_token: googleToken(subject),
+        });
+      }
+      throw new Error(`Unexpected OAuth test request: ${url}`);
+    });
+  try {
+    const verified = await req(
+      `/api/auth/callback/google?state=${encodeURIComponent(started.state)}&code=test-code-${subject}`,
+      "GET",
+      undefined,
+      started.cookie,
+    );
+    expect(verified.status, await verified.clone().text()).toBe(302);
+    expect(verified.headers.get("location")).toBe("/");
+    const session = cookies(verified);
+    expect(session).toContain("session_token");
+    return { session, started };
+  } finally {
+    mock.mockRestore();
+  }
 }
 beforeAll(async () => {
   await migrate(db, { migrationsFolder: "./drizzle" });
@@ -143,32 +211,68 @@ describe.sequential(
         404,
       );
     });
-    it("rejects non-UK phone numbers", async () => {
+    it("removes phone sign-in and OTP routes", async () => {
+      for (const path of [
+        "/api/auth/phone-number/send-otp",
+        "/api/auth/phone-number/verify",
+        "/api/auth/sign-in/phone-number",
+      ]) {
+        expect(
+          (
+            await req(
+              path,
+              "POST",
+              { phoneNumber: "+447700900123", code: "123456" },
+              "",
+            )
+          ).status,
+        ).toBe(404);
+      }
+      expect(
+        await db.query.smsMessage.findMany({ where: { kind: "otp" } }),
+      ).toEqual([]);
+    });
+    it("signs up through Google with PKCE and a real session, without a phone number", async () => {
+      const result = await login("driver-one");
+      cookie = result.session;
+      const session = (await (await req("/api/auth/get-session")).json()) as {
+        user: { id: string; email: string; emailVerified: boolean };
+      };
+      expect(session.user.email).toBe("driver-one@example.com");
+      expect(session.user.emailVerified).toBe(true);
+      const saved = await db.query.user.findFirst({
+        where: { id: session.user.id },
+      });
+      expect(saved?.phoneNumber).toBeNull();
+      expect((await req("/api/v1/me/driver")).status).toBe(404); // authenticated, but no car yet
+      const again = await req(
+        `/api/auth/callback/google?state=${encodeURIComponent(result.started.state)}&code=test-code-driver-one`,
+        "GET",
+        undefined,
+        result.started.cookie,
+      );
+      expect(again.headers.get("location")).toContain("error=");
+      expect(cookies(again)).not.toContain("session_token");
+    });
+    it("rejects forged OAuth state and untrusted return URLs", async () => {
+      const response = await req(
+        "/api/auth/callback/google?state=forged&code=forged",
+        "GET",
+        undefined,
+        "",
+      );
+      expect(cookies(response)).not.toContain("session_token");
+      expect(response.headers.get("location")).toContain("error=");
       expect(
         (
           await req(
-            "/api/auth/phone-number/send-otp",
+            "/api/auth/sign-in/social",
             "POST",
-            { phoneNumber: "+15551234567" },
+            { provider: "google", callbackURL: "https://untrusted.example/" },
             "",
           )
         ).status,
-      ).toBe(400);
-    });
-    it("signs up by OTP only and prevents code reuse", async () => {
-      const result = await login("+447700900123");
-      cookie = result.session;
-      const session = z
-        .object({ user: z.object({ phoneNumberVerified: z.boolean() }) })
-        .parse(await (await req("/api/auth/get-session")).json());
-      expect(session.user.phoneNumberVerified).toBe(true);
-      const again = await req(
-        "/api/auth/phone-number/verify",
-        "POST",
-        { phoneNumber: "+447700900123", code: result.code },
-        "",
-      );
-      expect(again.status).not.toBe(200);
+      ).toBe(403);
     });
     it("requires car setup then validates tank capacity and origin", async () => {
       expect((await req("/api/v1/me/driver")).status).toBe(404);
@@ -193,6 +297,11 @@ describe.sequential(
       expect(dash.recommendation!.action).toBe("top-up");
     });
     it("creates only one daily message under concurrent scheduler runs", async () => {
+      // Notification contact verification is independent of the Google session.
+      await db
+        .update(user)
+        .set({ phoneNumber: "+447700900123", phoneNumberVerified: true })
+        .where(eq(user.email, "driver-one@example.com"));
       const a = buildInjector(config, () => now),
         b = buildInjector(config, () => now);
       try {
@@ -212,7 +321,7 @@ describe.sequential(
       expect(messages[0].body).toContain("[DEMO]");
     });
     it("does not expose another user’s car or SMS and respects opt-out", async () => {
-      secondCookie = (await login("+447700900124")).session;
+      secondCookie = (await login("driver-two")).session;
       expect(
         (await req("/api/v1/me/driver", "GET", undefined, secondCookie)).status,
       ).toBe(404);
@@ -685,14 +794,14 @@ describe.sequential(
         await i.dispose();
       }
     });
-    it("rate limits OTP requests across request-scoped auth instances", async () => {
+    it("rate limits Google sign-in across request-scoped auth instances", async () => {
       const send = () =>
-        app.request("http://localhost:3100/api/auth/phone-number/send-otp", {
+        app.request("http://localhost:3100/api/auth/sign-in/social", {
           method: "POST",
           headers: { ...headers, "cf-connecting-ip": "192.0.2.50" },
-          body: JSON.stringify({ phoneNumber: "+447700900126" }),
+          body: JSON.stringify({ provider: "google", callbackURL: "/" }),
         });
-      for (let i = 0; i < 3; i++) expect((await send()).status).toBe(200);
+      for (let i = 0; i < 10; i++) expect((await send()).status).toBe(200);
       expect((await send()).status).toBe(429);
     });
   },

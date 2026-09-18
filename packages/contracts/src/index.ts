@@ -152,17 +152,20 @@ export const SmsSchema = z
     createdAt: z.iso.datetime(),
   })
   .openapi("SmsMessage");
-export const PhoneSchema = z
+export const GoogleSignInSchema = z
   .object({
-    phoneNumber: z
+    provider: z.literal("google"),
+    callbackURL: z
       .string()
-      .regex(/^\+447\d{9}$/)
-      .describe("UK mobile in E.164 format, e.g. +447700900123"),
+      .optional()
+      .describe("App URL after success, normally /"),
+    errorCallbackURL: z
+      .string()
+      .optional()
+      .describe("App URL after cancellation or failure"),
+    disableRedirect: z.boolean().optional(),
   })
-  .openapi("PhoneNumber");
-export const VerifySchema = PhoneSchema.extend({
-  code: z.string().regex(/^\d{6}$/),
-}).openapi("VerifyPhone");
+  .openapi("GoogleSignIn");
 export type DriverInputType = z.infer<typeof DriverInput>;
 export type Driver = z.infer<typeof DriverSchema>;
 export type Observation = z.infer<typeof ObservationSchema>;

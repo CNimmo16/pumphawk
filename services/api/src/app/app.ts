@@ -18,8 +18,7 @@ import {
   RecommendationSchema,
   IngestSchema,
   SmsSchema,
-  PhoneSchema,
-  VerifySchema,
+  GoogleSignInSchema,
 } from "@pump-hawk/contracts";
 import { readConfig, type Config } from "./config";
 import { buildInjector, type AppInjector } from "./injector";
@@ -37,10 +36,7 @@ const json = <T extends z.ZodType>(schema: T, description: string) => ({
 });
 const errors = {
   400: json(ErrorSchema, "Malformed or invalid request"),
-  401: json(
-    ErrorSchema,
-    "Phone verification and a session cookie are required",
-  ),
+  401: json(ErrorSchema, "A valid session cookie is required"),
   403: json(ErrorSchema, "Origin or credentials rejected"),
   404: json(ErrorSchema, "Resource not found"),
   422: json(ErrorSchema, "Invalid input"),
@@ -53,12 +49,8 @@ const requireUser: MiddlewareHandler<AppEnv> = async (c, next) => {
     .get("injector")
     .resolve("authService")
     .auth.api.getSession({ headers: c.req.raw.headers });
-  if (!result?.user.phoneNumberVerified)
-    throw new AppError(
-      "UNAUTHENTICATED",
-      "Verify your phone number to continue.",
-      401,
-    );
+  if (!result?.user)
+    throw new AppError("UNAUTHENTICATED", "Sign in to continue.", 401);
   c.set("userId", result.user.id);
   await next();
 };
@@ -86,7 +78,7 @@ export const openApiDocument = {
     title: "Pump Hawk API",
     version: "0.1.0",
     description:
-      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
+      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
   },
   servers: [{ url: "/" }],
   tags: [
@@ -98,7 +90,7 @@ export const openApiDocument = {
       name: "Driver",
       description: "Your car, estimated tank state, and fill-up advice",
     },
-    { name: "Auth", description: "Phone-only signup/login via Better Auth" },
+    { name: "Auth", description: "Google signup/login via Better Auth" },
     { name: "Alerts", description: "Opt-in alerts and persisted SMS stub" },
     { name: "System", description: "Operational status and development tools" },
   ],
@@ -667,46 +659,56 @@ export function createApp(
     async (c) =>
       c.json(await c.get("injector").resolve("modelService").weekly(), 200),
   );
-  for (const [path, id, schema, summary] of [
-    [
-      "/api/auth/phone-number/send-otp",
-      "sendPhoneOtp",
-      PhoneSchema,
-      "Send a six-digit phone verification code",
-    ],
-    [
-      "/api/auth/phone-number/verify",
-      "verifyPhoneOtp",
-      VerifySchema,
-      "Verify code; create account or sign in and set the session cookie",
-    ],
-  ] as const) {
-    app.openAPIRegistry.registerPath({
-      method: "post",
-      path,
-      operationId: id,
-      tags: ["Auth"],
-      summary,
-      request: {
-        body: { required: true, content: { "application/json": { schema } } },
+  app.openAPIRegistry.registerPath({
+    method: "post",
+    path: "/api/auth/sign-in/social",
+    operationId: "signInWithGoogle",
+    tags: ["Auth"],
+    summary: "Start Google sign-in or account creation",
+    description:
+      "Better Auth manages OAuth state, PKCE and the session cookie. Follow the returned authorization URL in the browser. Callback URLs must use APP_ORIGIN.",
+    request: {
+      body: {
+        required: true,
+        content: { "application/json": { schema: GoogleSignInSchema } },
       },
-      responses: {
-        200: json(
-          z.object({
-            status: z.boolean().optional(),
-            token: z.string().optional(),
-            user: z.unknown().optional(),
-          }),
-          "Better Auth result; verification sets an HttpOnly cookie",
-        ),
-        400: json(authError, "Invalid code or phone number"),
-        429: json(authError, "Too many attempts"),
+    },
+    responses: {
+      200: json(
+        z.object({ url: z.string().url(), redirect: z.boolean() }),
+        "Google authorization URL",
+      ),
+      400: json(authError, "Invalid sign-in request"),
+      403: json(authError, "Untrusted origin or callback URL"),
+      429: json(authError, "Too many attempts"),
+      503: errors[503],
+    },
+  });
+  app.post("/api/auth/sign-in/social", (c) => {
+    const config = c.get("injector").resolve("config");
+    if (!config.googleClientId || !config.googleClientSecret)
+      throw new AppError(
+        "GOOGLE_NOT_CONFIGURED",
+        "Google sign-in is not configured yet.",
+        503,
+      );
+    return c.get("injector").resolve("authService").auth.handler(c.req.raw);
+  });
+  app.openAPIRegistry.registerPath({
+    method: "get",
+    path: "/api/auth/callback/google",
+    tags: ["Auth"],
+    summary: "Google OAuth callback (managed by Better Auth)",
+    responses: {
+      302: {
+        description:
+          "Redirect to the application; successful sign-in sets an HttpOnly session cookie.",
       },
-    });
-    app.post(path, (c) =>
-      c.get("injector").resolve("authService").auth.handler(c.req.raw),
-    );
-  }
+    },
+  });
+  app.get("/api/auth/callback/google", (c) =>
+    c.get("injector").resolve("authService").auth.handler(c.req.raw),
+  );
   app.openAPIRegistry.registerPath({
     method: "get",
     path: "/api/auth/get-session",
@@ -729,33 +731,6 @@ export function createApp(
   app.post("/api/auth/sign-out", (c) =>
     c.get("injector").resolve("authService").auth.handler(c.req.raw),
   );
-  // Local development convenience only; deliberately omitted from the public contract.
-  app.get("/api/dev/otp", async (c) => {
-    const i = c.get("injector"),
-      config = i.resolve("config"),
-      hostname = new URL(c.req.url).hostname;
-    if (
-      config.environment !== "development" ||
-      !["localhost", "127.0.0.1"].includes(hostname)
-    )
-      throw new AppError("NOT_FOUND", "Endpoint not found.", 404);
-    c.header("Cache-Control", "no-store");
-    const row = await i.resolve("dbService").db.query.smsMessage.findFirst({
-      where: {
-        phoneNumber: c.req.query("phone") ?? "",
-        kind: "otp",
-        createdAt: { gt: new Date(Date.now() - 5 * 60_000) },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return c.json(
-      {
-        code: row?.body.match(/\b\d{6}\b/)?.[0] ?? null,
-        delivery: "local stub",
-      },
-      200,
-    );
-  });
   app.openAPIRegistry.registerComponent("securitySchemes", "sessionCookie", {
     type: "apiKey",
     in: "cookie",

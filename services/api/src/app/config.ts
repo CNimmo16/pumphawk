@@ -5,6 +5,8 @@ export const ConfigSchema = z
     appOrigin: z.url(),
     authUrl: z.url(),
     authSecret: z.string().min(32),
+    googleClientId: z.string().min(1).optional(),
+    googleClientSecret: z.string().min(1).optional(),
     ingestApiKey: z.string().min(24),
     databaseUrl: z.string().min(1),
     marketDataMode: z.enum(["demo", "live", "sample"]),
@@ -13,6 +15,14 @@ export const ConfigSchema = z
     fuelFinderClientSecret: z.string().optional(),
     marketSource: z.string().default("provider"),
   })
+  .refine(
+    (config) =>
+      Boolean(config.googleClientId) === Boolean(config.googleClientSecret),
+    {
+      message: "Configure both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+      path: ["googleClientId"],
+    },
+  )
   .refine(
     (config) =>
       config.marketDataMode !== "sample" ||
@@ -29,6 +39,8 @@ export function readConfig(env: Env): Config {
     appOrigin: env.APP_ORIGIN,
     authUrl: env.BETTER_AUTH_URL,
     authSecret: env.BETTER_AUTH_SECRET,
+    googleClientId: env.GOOGLE_CLIENT_ID || undefined,
+    googleClientSecret: env.GOOGLE_CLIENT_SECRET || undefined,
     ingestApiKey: env.INGEST_API_KEY,
     databaseUrl: env.DATABASE_URL,
     marketDataMode: env.MARKET_DATA_MODE,

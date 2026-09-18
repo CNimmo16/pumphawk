@@ -5,6 +5,8 @@ import { spawnSync } from "node:child_process";
 const names = [
   "DATABASE_URL",
   "BETTER_AUTH_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
   "INGEST_API_KEY",
   "DATABENTO_API_KEY",
   "FUEL_FINDER_CLIENT_ID",

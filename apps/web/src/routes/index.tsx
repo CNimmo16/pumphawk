@@ -167,8 +167,20 @@ function TankCard({
 function Dashboard() {
   const [ready, setReady] = useState(false),
     [modal, setModal] = useState<"auth" | "driver" | "tank" | null>(null),
-    [notice, setNotice] = useState("");
-  useEffect(() => setReady(true), []);
+    [notice, setNotice] = useState(""),
+    [authError, setAuthError] = useState("");
+  useEffect(() => {
+    setReady(true);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("authError") === "google") {
+      setModal("auth");
+      setAuthError("Google sign-in wasn’t completed. Please try again.");
+      url.searchParams.delete("authError");
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_description");
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }, []);
   const session = auth.useSession(),
     signedIn = !!session.data?.user,
     cache = useQueryClient();
@@ -661,13 +673,7 @@ function Dashboard() {
           onClose={() => setModal(null)}
         >
           {modal === "auth" ? (
-            <AuthForm
-              onDone={() => {
-                void cache.invalidateQueries();
-                setNotice("");
-                setModal(null);
-              }}
-            />
+            <AuthForm initialError={authError} />
           ) : modal === "tank" && car ? (
             <TankForm
               driver={car}

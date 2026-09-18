@@ -1,6 +1,12 @@
 import { writeFile, appendFile } from "node:fs/promises";
 
 // Runs only in the deployment job. Never prints tokens, connection strings or API bodies.
+// Fail before migrations/deploy so missing OAuth secrets cannot replace working sign-in.
+for (const name of ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"])
+  if (!process.env[name])
+    throw new Error(
+      `Add GitHub production environment secret ${name} before deploying Google sign-in.`,
+    );
 const token = process.env.CLOUDFLARE_API_TOKEN;
 if (!token) throw new Error("Missing GitHub secret CLOUDFLARE_API_TOKEN");
 async function api(path, init = {}) {

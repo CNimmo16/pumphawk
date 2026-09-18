@@ -65,6 +65,8 @@ jobs:
       VITE_RELEASE: ${{ github.sha }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+      GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       WRANGLER_SEND_METRICS: "false"
     steps:
       - uses: actions/checkout@v7

@@ -3,7 +3,7 @@
   "info": {
     "title": "Pump Hawk API",
     "version": "0.1.0",
-    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/phone-number/send-otp, then /verify. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a verified phone. POST /api/v1/market/observations uses the separate ingestion bearer secret."
+    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret."
   },
   "servers": [
     {
@@ -21,7 +21,7 @@
     },
     {
       "name": "Auth",
-      "description": "Phone-only signup/login via Better Auth"
+      "description": "Google signup/login via Better Auth"
     },
     {
       "name": "Alerts",
@@ -1001,36 +1001,29 @@
           "warnings"
         ]
       },
-      "PhoneNumber": {
+      "GoogleSignIn": {
         "type": "object",
         "properties": {
-          "phoneNumber": {
+          "provider": {
             "type": "string",
-            "pattern": "^\\+447\\d{9}$",
-            "description": "UK mobile in E.164 format, e.g. +447700900123"
+            "enum": [
+              "google"
+            ]
+          },
+          "callbackURL": {
+            "type": "string",
+            "description": "App URL after success, normally /"
+          },
+          "errorCallbackURL": {
+            "type": "string",
+            "description": "App URL after cancellation or failure"
+          },
+          "disableRedirect": {
+            "type": "boolean"
           }
         },
         "required": [
-          "phoneNumber"
-        ]
-      },
-      "VerifyPhone": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/PhoneNumber"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string",
-                "pattern": "^\\d{6}$"
-              }
-            },
-            "required": [
-              "code"
-            ]
-          }
+          "provider"
         ]
       }
     },
@@ -1097,7 +1090,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1188,7 +1181,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1283,7 +1276,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1388,7 +1381,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1483,7 +1476,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1578,7 +1571,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1676,7 +1669,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1794,7 +1787,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -1902,7 +1895,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2024,7 +2017,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2120,7 +2113,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2226,7 +2219,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2332,7 +2325,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2457,7 +2450,7 @@
             }
           },
           "401": {
-            "description": "Phone verification and a session cookie are required",
+            "description": "A valid session cookie is required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2550,45 +2543,72 @@
         }
       }
     },
-    "/api/auth/phone-number/send-otp": {
+    "/api/auth/sign-in/social": {
       "post": {
-        "operationId": "sendPhoneOtp",
+        "operationId": "signInWithGoogle",
         "tags": [
           "Auth"
         ],
-        "summary": "Send a six-digit phone verification code",
+        "summary": "Start Google sign-in or account creation",
+        "description": "Better Auth manages OAuth state, PKCE and the session cookie. Follow the returned authorization URL in the browser. Callback URLs must use APP_ORIGIN.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PhoneNumber"
+                "$ref": "#/components/schemas/GoogleSignIn"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Better Auth result; verification sets an HttpOnly cookie",
+            "description": "Google authorization URL",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "redirect": {
                       "type": "boolean"
-                    },
-                    "token": {
-                      "type": "string"
-                    },
-                    "user": {}
-                  }
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "redirect"
+                  ]
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid code or phone number",
+            "description": "Invalid sign-in request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Untrusted origin or callback URL",
             "content": {
               "application/json": {
                 "schema": {
@@ -2627,6 +2647,16 @@
                     "code",
                     "message"
                   ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data unavailable or stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -2634,86 +2664,15 @@
         }
       }
     },
-    "/api/auth/phone-number/verify": {
-      "post": {
-        "operationId": "verifyPhoneOtp",
+    "/api/auth/callback/google": {
+      "get": {
         "tags": [
           "Auth"
         ],
-        "summary": "Verify code; create account or sign in and set the session cookie",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyPhone"
-              }
-            }
-          }
-        },
+        "summary": "Google OAuth callback (managed by Better Auth)",
         "responses": {
-          "200": {
-            "description": "Better Auth result; verification sets an HttpOnly cookie",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "boolean"
-                    },
-                    "token": {
-                      "type": "string"
-                    },
-                    "user": {}
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid code or phone number",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many attempts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message"
-                  ]
-                }
-              }
-            }
+          "302": {
+            "description": "Redirect to the application; successful sign-in sets an HttpOnly session cookie."
           }
         }
       }

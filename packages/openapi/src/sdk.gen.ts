@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SendPhoneOtpData, SendPhoneOtpErrors, SendPhoneOtpResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses, VerifyPhoneOtpData, VerifyPhoneOtpErrors, VerifyPhoneOtpResponses } from './types.gen';
+import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -190,10 +190,12 @@ export const syncData = <ThrowOnError extends boolean = false>(options: Options<
 export const getWeeklyOutlook = <ThrowOnError extends boolean = false>(options?: Options<GetWeeklyOutlookData, ThrowOnError>): RequestResult<GetWeeklyOutlookResponses, GetWeeklyOutlookErrors, ThrowOnError> => (options?.client ?? client).get<GetWeeklyOutlookResponses, GetWeeklyOutlookErrors, ThrowOnError>({ url: '/api/v1/forecast/weekly', ...options });
 
 /**
- * Send a six-digit phone verification code
+ * Start Google sign-in or account creation
+ *
+ * Better Auth manages OAuth state, PKCE and the session cookie. Follow the returned authorization URL in the browser. Callback URLs must use APP_ORIGIN.
  */
-export const sendPhoneOtp = <ThrowOnError extends boolean = false>(options: Options<SendPhoneOtpData, ThrowOnError>): RequestResult<SendPhoneOtpResponses, SendPhoneOtpErrors, ThrowOnError> => (options.client ?? client).post<SendPhoneOtpResponses, SendPhoneOtpErrors, ThrowOnError>({
-    url: '/api/auth/phone-number/send-otp',
+export const signInWithGoogle = <ThrowOnError extends boolean = false>(options: Options<SignInWithGoogleData, ThrowOnError>): RequestResult<SignInWithGoogleResponses, SignInWithGoogleErrors, ThrowOnError> => (options.client ?? client).post<SignInWithGoogleResponses, SignInWithGoogleErrors, ThrowOnError>({
+    url: '/api/auth/sign-in/social',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -202,16 +204,9 @@ export const sendPhoneOtp = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Verify code; create account or sign in and set the session cookie
+ * Google OAuth callback (managed by Better Auth)
  */
-export const verifyPhoneOtp = <ThrowOnError extends boolean = false>(options: Options<VerifyPhoneOtpData, ThrowOnError>): RequestResult<VerifyPhoneOtpResponses, VerifyPhoneOtpErrors, ThrowOnError> => (options.client ?? client).post<VerifyPhoneOtpResponses, VerifyPhoneOtpErrors, ThrowOnError>({
-    url: '/api/auth/phone-number/verify',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const getApiAuthCallbackGoogle = <ThrowOnError extends boolean = false>(options?: Options<GetApiAuthCallbackGoogleData, ThrowOnError>): RequestResult<unknown, unknown, ThrowOnError> => (options?.client ?? client).get<unknown, unknown, ThrowOnError>({ url: '/api/auth/callback/google', ...options });
 
 export const getSession = <ThrowOnError extends boolean = false>(options?: Options<GetSessionData, ThrowOnError>): RequestResult<GetSessionResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSessionResponses, unknown, ThrowOnError>({ url: '/api/auth/get-session', ...options });
 

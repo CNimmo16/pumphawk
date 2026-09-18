@@ -1,8 +1,8 @@
 # Pump Hawk
 
-A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth phone login, typed-inject services and a generated Hey API/TanStack Query client.
+A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth Google login, typed-inject services and a generated Hey API/TanStack Query client.
 
-**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS verification is still a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
+**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS notifications still use a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
 
 ## Run locally
 
@@ -21,6 +21,8 @@ Add server-only credentials to `services/api/.dev.vars` (see its `.example` file
 DATABENTO_API_KEY=...
 FUEL_FINDER_CLIENT_ID=...
 FUEL_FINDER_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 ```
 
 Then:
@@ -39,7 +41,7 @@ pnpm dev                     # API, frontend and local data scheduler
 - Direct API: `http://localhost:8787`
 - Docker Postgres: `localhost:55435`
 
-Use a fictional development phone such as `07700 900123`. The local SMS stub displays the code. Sign in, enter car details and driving estimates, then use your location or a postcode to select one to three E10 stations. UK MPG uses imperial gallons. A separate tank update preserves your car, driving schedule and stations.
+Create a Google OAuth **Web application** client with `http://localhost:3100/api/auth/callback/google` as an authorised redirect URI. If the consent screen is in testing mode, add your Google account as a test user. Sign in with Google, enter car details and driving estimates, then use your location or a postcode to select one to three E10 stations. UK MPG uses imperial gallons. A separate tank update preserves your car, driving schedule and stations.
 
 `pnpm db:down` stops Postgres and preserves its volume. `/api/v1/demo` remains an explicitly synthetic legacy API example. Normal configuration uses `MARKET_DATA_MODE=live`.
 
@@ -100,14 +102,14 @@ Fuel planning uses the actual weekday schedule, imperial MPG and the last gauge 
 Follows the service/package conventions in `~/Documents/waxly/monorepo`:
 
 ```text
-apps/web/src/components/   Phone login, three-step onboarding, Leaflet map, SVG charts
+apps/web/src/components/   Google login, three-step onboarding, Leaflet map, SVG charts
 services/api/src/
   app/                     Hono/OpenAPI routes, config and typed-inject composition
   data/                    Databento, FX, Fuel Finder, job ingestion and station services
   pricing/                 Pure forecast/recommendation policies and stored-data queries
   drivers/                 Car, mileage and tank settings
   alerts/                  Legacy manual alert evaluation
-  lib/auth/                Better Auth phone-only signup/login
+  lib/auth/                Better Auth Google signup/login
   lib/db/                  PostgreSQL schema, Drizzle v2 relations and connections
   lib/sms/                 Persisted no-network SMS stub
 services/api/drizzle/      Generated migrations and snapshots
@@ -130,16 +132,16 @@ Do not hand-edit generated clients. Frontend queries/mutations consume `@pump-ha
 | Method   | Endpoint                                              | Access                     | Purpose                                                         |
 | -------- | ----------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
 | GET      | `/api/health`, `/api/docs`, `/api/openapi.json`       | Public                     | Health and documentation                                        |
-| POST     | `/api/auth/phone-number/send-otp`, `/verify`          | Rate limited               | Phone-only signup/login                                         |
+| POST     | `/api/auth/sign-in/social`                            | Rate limited               | Start Google signup/login                                       |
 | GET/POST | `/api/auth/get-session`, `/sign-out`                  | Cookie                     | Session/logout                                                  |
 | GET      | `/api/v1/forecast`                                    | Public                     | Actual history and next 14 days, bounds and signals             |
 | GET      | `/api/v1/demo`                                        | Public                     | Explicitly synthetic example                                    |
-| GET/PUT  | `/api/v1/me/driver`                                   | Verified phone             | Car and mileage; PUT confirms a fresh gauge reading             |
-| PUT      | `/api/v1/me/onboarding`                               | Verified phone             | Save car, driving and selected nearby stations atomically       |
-| PATCH    | `/api/v1/me/tank`                                     | Verified phone             | Update current litres only                                      |
-| GET      | `/api/v1/me/stations/nearby?latitude=…&longitude=…`   | Verified phone             | Available E10 stations within five miles                        |
-| GET      | `/api/v1/me/stations`                                 | Verified phone             | Selected stations and up to 30 days of price observations       |
-| GET      | `/api/v1/me/dashboard`, `/api/v1/me/recommendation`   | Verified phone             | Personal buying plan                                            |
+| GET/PUT  | `/api/v1/me/driver`                                   | Session cookie             | Car and mileage; PUT confirms a fresh gauge reading             |
+| PUT      | `/api/v1/me/onboarding`                               | Session cookie             | Save car, driving and selected nearby stations atomically       |
+| PATCH    | `/api/v1/me/tank`                                     | Session cookie             | Update current litres only                                      |
+| GET      | `/api/v1/me/stations/nearby?latitude=…&longitude=…`   | Session cookie             | Available E10 stations within five miles                        |
+| GET      | `/api/v1/me/stations`                                 | Session cookie             | Selected stations and up to 30 days of price observations       |
+| GET      | `/api/v1/me/dashboard`, `/api/v1/me/recommendation`   | Session cookie             | Personal buying plan                                            |
 | POST     | `/api/v1/data/sync/daily`, `/api/v1/data/sync/hourly` | Ingestion bearer key       | Run the same idempotent jobs manually                           |
 | POST     | `/api/v1/market/observations`                         | Ingestion bearer key       | Legacy manual observation import; not used by the live pipeline |
 | GET/POST | `/api/v1/me/messages`, `/api/v1/alerts/evaluate`      | Session/admin respectively | Legacy SMS stub endpoints                                       |
@@ -150,7 +152,9 @@ The dashboard can return `forecast: null`, `recommendation: null` and `forecastE
 
 ## SMS
 
-Login OTPs use `StubSmsTransport`. The development-only `/api/dev/otp` endpoint is localhost-only and unavailable in production/test. No real SMS is sent. The text-alert card is removed. Existing opt-in stub alerts still evaluate at 08:00 Europe/London (07:00/08:00 UTC cron triggers cover BST/GMT); new onboardings default to no alerts. Existing consent is preserved when editing a car. Legacy outbox/evaluation endpoints remain. A real SMS provider is needed before production phone signup will work.
+Google is the only sign-in method; phone sign-in, OTP routes and the local OTP endpoint are removed. SMS notifications retain `StubSmsTransport`, the outbox, consent flags, retries and scheduled evaluation at 08:00 Europe/London. No real SMS is sent yet. Alerts still require an opted-in driver and a stored verified notification phone number. Those fields and existing sessions are preserved; a Google account without a phone can use the app and simply receives no SMS. The text-alert card remains removed and new onboardings default to no alerts. Adding/verifying a notification phone independently of sign-in will be a separate flow before enabling SMS for new Google users.
+
+Google identities are matched by their provider account, not by a phone number. Legacy phone-only users have placeholder emails and are not automatically merged with Google accounts. Their records remain intact; any account migration must explicitly link the correct identity.
 
 ## Validation
 
