@@ -14,6 +14,7 @@ import {
   stationPriceMedian,
 } from "../lib/station-prices";
 import { StationMap } from "./station-map";
+import { VehicleLookupForm } from "./vehicle-lookup";
 const days = [
   "Monday",
   "Tuesday",
@@ -65,10 +66,13 @@ export function DriverForm({
   const stations = nearby.data?.stations ?? [];
   const median = stationPriceMedian(stations);
   const sortedStations = [...stations].sort((a, b) => {
+    const selection =
+      Number(selected.includes(b.id)) - Number(selected.includes(a.id));
     const distance =
       (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity);
     const price = (a.pricePence ?? Infinity) - (b.pricePence ?? Infinity);
     return (
+      selection ||
       (stationSort === "price" ? price || distance : distance || price) ||
       a.name.localeCompare(b.name) ||
       a.id.localeCompare(b.id)
@@ -173,7 +177,11 @@ export function DriverForm({
           max={max}
           step="0.1"
           required
-          value={form[key]}
+          value={
+            (key === "tankCapacityLitres" || key === "mpg") && form[key] === 0
+              ? ""
+              : form[key]
+          }
           onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })}
         />
         <span>{unit}</span>
@@ -207,7 +215,7 @@ export function DriverForm({
         <p className="muted">
           {
             [
-              "Enter your tank size and fuel economy. Vehicle registration lookup is coming later.",
+              "Add your car’s tank size and average fuel economy. You can adjust these whenever you need to.",
               "Estimate your usual mileage. We’ll use it to plan how much petrol you need.",
               "Choose up to three E10 petrol stations within five miles. We’ll track their prices every hour.",
             ][step]
@@ -216,6 +224,17 @@ export function DriverForm({
       </div>
       {step === 0 && (
         <>
+          <VehicleLookupForm
+            onApply={(car) =>
+              setForm((current) => ({
+                ...current,
+                vehicleName: car.vehicleName,
+                // Missing specifications must be entered, never replaced with guesses.
+                tankCapacityLitres: car.tankCapacityLitres ?? 0,
+                mpg: car.mpg ?? 0,
+              }))
+            }
+          />
           <label>
             Car name
             <input
@@ -363,7 +382,7 @@ export function DriverForm({
               <div className="station-list-heading">
                 <div>
                   <strong>{selected.length} of 3 selected</strong>
-                  <span>E10 · pence per litre</span>
+                  <span>Selected first · E10 · pence per litre</span>
                 </div>
                 <label className="station-sort">
                   Sort by

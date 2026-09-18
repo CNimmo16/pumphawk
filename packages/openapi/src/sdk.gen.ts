@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses } from './types.gen';
+import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityErrors, GetVehicleLookupAvailabilityResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, LookupVehicleData, LookupVehicleErrors, LookupVehicleResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -109,6 +109,38 @@ export const evaluateAlerts = <ThrowOnError extends boolean = false>(options?: O
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/alerts/evaluate',
     ...options
+});
+
+/**
+ * Check whether registration lookup is available
+ */
+export const getVehicleLookupAvailability = <ThrowOnError extends boolean = false>(options?: Options<GetVehicleLookupAvailabilityData, ThrowOnError>): RequestResult<GetVehicleLookupAvailabilityResponses, GetVehicleLookupAvailabilityErrors, ThrowOnError> => (options?.client ?? client).get<GetVehicleLookupAvailabilityResponses, GetVehicleLookupAvailabilityErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/me/vehicle-lookup',
+    ...options
+});
+
+/**
+ * Look up car specifications by UK registration
+ *
+ * Uses UK Vehicle Data via One Auto API. Maximum 10 attempts per user per UTC day. Registration is sent in the body and is not stored. Tank capacity and combined imperial MPG can be missing; users must review specifications before saving. No automatic retries.
+ */
+export const lookupVehicle = <ThrowOnError extends boolean = false>(options: Options<LookupVehicleData, ThrowOnError>): RequestResult<LookupVehicleResponses, LookupVehicleErrors, ThrowOnError> => (options.client ?? client).post<LookupVehicleResponses, LookupVehicleErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/me/vehicle-lookup',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

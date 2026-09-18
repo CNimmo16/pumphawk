@@ -16,6 +16,7 @@ import {
 import { AuthService } from "../lib/auth/auth.service";
 import { MarketService } from "../pricing/market.service";
 import { DriverService } from "../drivers/driver.service";
+import { VehicleService } from "../drivers/vehicle.service";
 import { AlertService } from "../alerts/alert.service";
 export function buildInjector(
   config: Config,
@@ -39,6 +40,7 @@ export function buildInjector(
     .provideClass("stationService", StationService)
     .provideClass("marketService", MarketService)
     .provideClass("driverService", DriverService)
+    .provideClass("vehicleService", VehicleService)
     .provideClass("alertService", AlertService);
 }
 export type AppInjector = ReturnType<typeof buildInjector>;

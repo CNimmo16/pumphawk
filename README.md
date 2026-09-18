@@ -1,5 +1,7 @@
 # Pump Hawk
 
+Registration-based car setup is optional: see [VEHICLE_LOOKUP.md](./VEHICLE_LOOKUP.md) for provider setup and `ONE_AUTO_API_KEY`. Selected stations stay at the top of the onboarding list under both distance and price sorting.
+
 A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth Google login, typed-inject services and a generated Hey API/TanStack Query client.
 
 **Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS notifications still use a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).

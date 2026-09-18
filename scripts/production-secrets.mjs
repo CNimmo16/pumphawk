@@ -19,6 +19,9 @@ const values = Object.fromEntries(
   }),
 );
 const directory = await mkdtemp(join(tmpdir(), "pump-hawk-secrets-"));
+// Registration lookup is optional; missing configuration leaves manual entry available.
+if (process.env.ONE_AUTO_API_KEY)
+  values.ONE_AUTO_API_KEY = process.env.ONE_AUTO_API_KEY;
 try {
   const file = join(directory, "secrets.json");
   await writeFile(file, JSON.stringify(values), { mode: 0o600 });

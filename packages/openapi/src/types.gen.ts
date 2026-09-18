@@ -144,6 +144,25 @@ export type MarketObservation = {
     disruption?: boolean;
 };
 
+export type VehicleLookupAvailability = {
+    enabled: boolean;
+};
+
+export type VehicleLookup = {
+    registrationNumber: string;
+    vehicleName: string;
+    fuelType: string | null;
+    year: number | null;
+    tankCapacityLitres: number | null;
+    mpg: number | null;
+    warnings: Array<string>;
+    source: 'UK Vehicle Data via One Auto API';
+};
+
+export type VehicleLookupInput = {
+    registrationNumber: string;
+};
+
 export type NearbyStations = {
     stations: Array<Station>;
     radiusMiles: 5;
@@ -696,6 +715,104 @@ export type EvaluateAlertsResponses = {
 };
 
 export type EvaluateAlertsResponse = EvaluateAlertsResponses[keyof EvaluateAlertsResponses];
+
+export type GetVehicleLookupAvailabilityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/vehicle-lookup';
+};
+
+export type GetVehicleLookupAvailabilityErrors = {
+    /**
+     * Malformed or invalid request
+     */
+    400: ApiError;
+    /**
+     * A valid session cookie is required
+     */
+    401: ApiError;
+    /**
+     * Origin or credentials rejected
+     */
+    403: ApiError;
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Invalid input
+     */
+    422: ApiError;
+    /**
+     * Rate limit exceeded
+     */
+    429: ApiError;
+    /**
+     * Data unavailable or stale
+     */
+    503: ApiError;
+};
+
+export type GetVehicleLookupAvailabilityError = GetVehicleLookupAvailabilityErrors[keyof GetVehicleLookupAvailabilityErrors];
+
+export type GetVehicleLookupAvailabilityResponses = {
+    /**
+     * Lookup availability
+     */
+    200: VehicleLookupAvailability;
+};
+
+export type GetVehicleLookupAvailabilityResponse = GetVehicleLookupAvailabilityResponses[keyof GetVehicleLookupAvailabilityResponses];
+
+export type LookupVehicleData = {
+    body: VehicleLookupInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/vehicle-lookup';
+};
+
+export type LookupVehicleErrors = {
+    /**
+     * Malformed or invalid request
+     */
+    400: ApiError;
+    /**
+     * A valid session cookie is required
+     */
+    401: ApiError;
+    /**
+     * Origin or credentials rejected
+     */
+    403: ApiError;
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Invalid input
+     */
+    422: ApiError;
+    /**
+     * Rate limit exceeded
+     */
+    429: ApiError;
+    /**
+     * Data unavailable or stale
+     */
+    503: ApiError;
+};
+
+export type LookupVehicleError = LookupVehicleErrors[keyof LookupVehicleErrors];
+
+export type LookupVehicleResponses = {
+    /**
+     * Editable car specifications
+     */
+    200: VehicleLookup;
+};
+
+export type LookupVehicleResponse = LookupVehicleResponses[keyof LookupVehicleResponses];
 
 export type GetNearbyStationsData = {
     body?: never;

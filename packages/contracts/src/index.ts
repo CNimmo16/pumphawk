@@ -227,3 +227,38 @@ export const TankInput = z
   .object({ currentLitres: z.number().min(0).max(150) })
   .openapi("TankInput");
 export type Station = z.infer<typeof StationSchema>;
+
+export const VehicleLookupInput = z
+  .object({
+    registrationNumber: z
+      .string()
+      .trim()
+      .min(2)
+      .max(10)
+      .regex(
+        /^(?=.*[a-z])(?=.*\d)[a-z\d ]+$/i,
+        "Enter a UK registration number.",
+      )
+      .refine(
+        (v) => v.replace(/ /g, "").length <= 7,
+        "Enter a UK registration number.",
+      ),
+  })
+  .openapi("VehicleLookupInput");
+export const VehicleLookupSchema = z
+  .object({
+    registrationNumber: z.string(),
+    vehicleName: z.string().min(1).max(60),
+    fuelType: z.string().nullable(),
+    year: z.number().int().nullable(),
+    tankCapacityLitres: z.number().min(15).max(150).nullable(),
+    mpg: z.number().min(10).max(150).nullable(),
+    warnings: z.array(z.string()),
+    source: z.literal("UK Vehicle Data via One Auto API"),
+  })
+  .openapi("VehicleLookup");
+export const VehicleLookupAvailabilitySchema = z
+  .object({
+    enabled: z.boolean(),
+  })
+  .openapi("VehicleLookupAvailability");

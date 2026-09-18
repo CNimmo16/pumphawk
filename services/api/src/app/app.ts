@@ -19,6 +19,9 @@ import {
   IngestSchema,
   SmsSchema,
   GoogleSignInSchema,
+  VehicleLookupInput,
+  VehicleLookupSchema,
+  VehicleLookupAvailabilitySchema,
 } from "@pump-hawk/contracts";
 import { readConfig, type Config } from "./config";
 import { buildInjector, type AppInjector } from "./injector";
@@ -26,6 +29,7 @@ import { AppError } from "./errors";
 import { recommend } from "../pricing/recommendation";
 import { demoObservations, forecastPrices } from "../pricing/forecast";
 import type { MiddlewareHandler } from "hono";
+import type { HttpClient } from "../data/http";
 export type AppEnv = {
   Bindings: Env;
   Variables: { injector: AppInjector; userId: string };
@@ -96,7 +100,11 @@ export const openApiDocument = {
   ],
 };
 export function createApp(
-  options: { config?: Config; clock?: () => Date } = {},
+  options: {
+    config?: Config;
+    clock?: () => Date;
+    httpClient?: HttpClient;
+  } = {},
 ) {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
@@ -141,7 +149,12 @@ export function createApp(
       return;
     }
     const config = options.config ?? readConfig(c.env);
-    const injector = buildInjector(config, options.clock);
+    const injector = buildInjector(
+      config,
+      options.clock,
+      undefined,
+      options.httpClient,
+    );
     c.set("injector", injector);
     try {
       if (c.req.path.startsWith("/api/v1/me")) {
@@ -470,6 +483,55 @@ export function createApp(
     }),
     async (c) =>
       c.json(await c.get("injector").resolve("alertService").evaluate(), 200),
+  );
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/api/v1/me/vehicle-lookup",
+      operationId: "getVehicleLookupAvailability",
+      tags: ["Driver"],
+      security: protectedSecurity,
+      summary: "Check whether registration lookup is available",
+      responses: {
+        200: json(VehicleLookupAvailabilitySchema, "Lookup availability"),
+        ...errors,
+      },
+    }),
+    (c) =>
+      c.json(
+        { enabled: c.get("injector").resolve("vehicleService").enabled },
+        200,
+      ),
+  );
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/api/v1/me/vehicle-lookup",
+      operationId: "lookupVehicle",
+      tags: ["Driver"],
+      security: protectedSecurity,
+      summary: "Look up car specifications by UK registration",
+      description:
+        "Uses UK Vehicle Data via One Auto API. Maximum 10 attempts per user per UTC day. Registration is sent in the body and is not stored. Tank capacity and combined imperial MPG can be missing; users must review specifications before saving. No automatic retries.",
+      request: {
+        body: {
+          required: true,
+          content: { "application/json": { schema: VehicleLookupInput } },
+        },
+      },
+      responses: {
+        200: json(VehicleLookupSchema, "Editable car specifications"),
+        ...errors,
+      },
+    }),
+    async (c) =>
+      c.json(
+        await c
+          .get("injector")
+          .resolve("vehicleService")
+          .lookup(c.get("userId"), c.req.valid("json")),
+        200,
+      ),
   );
   app.openapi(
     createRoute({

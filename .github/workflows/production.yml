@@ -96,6 +96,7 @@ jobs:
           DATABENTO_API_KEY: ${{ secrets.DATABENTO_API_KEY }}
           FUEL_FINDER_CLIENT_ID: ${{ secrets.FUEL_FINDER_CLIENT_ID }}
           FUEL_FINDER_CLIENT_SECRET: ${{ secrets.FUEL_FINDER_CLIENT_SECRET }}
+          ONE_AUTO_API_KEY: ${{ secrets.ONE_AUTO_API_KEY }}
       - name: Build and deploy web Worker
         run: |
           pnpm --filter @pump-hawk/web build

@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getWeeklyOutlook, ingestObservations, type Options, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank } from '../sdk.gen';
-import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse } from '../types.gen';
+import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getVehicleLookupAvailability, getWeeklyOutlook, ingestObservations, lookupVehicle, type Options, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank } from '../sdk.gen';
+import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, LookupVehicleData, LookupVehicleError, LookupVehicleResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -193,6 +193,43 @@ export const evaluateAlertsMutation = (options?: Partial<Options<EvaluateAlertsD
     const mutationOptions: UseMutationOptions<EvaluateAlertsResponse, EvaluateAlertsError, Options<EvaluateAlertsData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await evaluateAlerts({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getVehicleLookupAvailabilityQueryKey = (options?: Options<GetVehicleLookupAvailabilityData>) => createQueryKey('getVehicleLookupAvailability', options);
+
+/**
+ * Check whether registration lookup is available
+ */
+export const getVehicleLookupAvailabilityOptions = (options?: Options<GetVehicleLookupAvailabilityData>) => queryOptions<GetVehicleLookupAvailabilityResponse, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, ReturnType<typeof getVehicleLookupAvailabilityQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getVehicleLookupAvailability({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getVehicleLookupAvailabilityQueryKey(options)
+});
+
+/**
+ * Look up car specifications by UK registration
+ *
+ * Uses UK Vehicle Data via One Auto API. Maximum 10 attempts per user per UTC day. Registration is sent in the body and is not stored. Tank capacity and combined imperial MPG can be missing; users must review specifications before saving. No automatic retries.
+ */
+export const lookupVehicleMutation = (options?: Partial<Options<LookupVehicleData>>): UseMutationOptions<LookupVehicleResponse, LookupVehicleError, Options<LookupVehicleData>> => {
+    const mutationOptions: UseMutationOptions<LookupVehicleResponse, LookupVehicleError, Options<LookupVehicleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await lookupVehicle({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

@@ -1688,6 +1688,53 @@ footer a:hover {
   gap: 12px;
   font-size: 12px;
 }
+.vehicle-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.vehicle-lookup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.vehicle-lookup-actions .registration-input {
+  flex: 1;
+  min-width: 130px;
+  width: 150px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+.vehicle-match {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.vehicle-match > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.vehicle-match dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+.vehicle-match dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.vehicle-match dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+  font-size: 13px;
+}
 .station-list-heading > div {
   display: flex;
   flex-direction: column;

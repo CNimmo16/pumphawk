@@ -296,6 +296,111 @@ describe.sequential(
       expect(DashboardSchema.safeParse(dash).success).toBe(true);
       expect(dash.recommendation!.action).toBe("top-up");
     });
+    it("protects registration lookup, normalises plates and atomically limits paid requests", async () => {
+      const data = {
+        success: true,
+        result: {
+          vehicle_details: {
+            vehicle_identification: {
+              vehicle_registration_mark: "AB12CDE",
+              dvla_manufacturer_desc: "FORD",
+              dvla_model_desc: "FIESTA",
+              dvla_fuel_desc: "PETROL",
+            },
+          },
+          model_details: {
+            body_details: { fuel_capacity_litres: 42 },
+            fuel_economy: { combined_litres_100km: 5.4 },
+          },
+        },
+      };
+      const http = vi.fn(async () => Response.json(data));
+      let lookupNow = now;
+      const lookupApp = createApp({
+        config: { ...config, oneAutoApiKey: "private-vehicle-key" },
+        clock: () => lookupNow,
+        httpClient: http,
+      });
+      const lookup = (
+        registrationNumber = "ab12 cde",
+        session = cookie,
+        origin = config.appOrigin,
+      ) =>
+        lookupApp.request("http://localhost:3100/api/v1/me/vehicle-lookup", {
+          method: "POST",
+          headers: { ...headers, cookie: session, origin },
+          body: JSON.stringify({ registrationNumber }),
+        });
+      expect((await lookup("ab12 cde", "")).status).toBe(401);
+      expect(
+        (await lookup("ab12 cde", cookie, "https://untrusted.example")).status,
+      ).toBe(403);
+      expect((await lookup("bad!plate")).status).toBe(422);
+      expect(http).not.toHaveBeenCalled();
+      expect(await (await req("/api/v1/me/vehicle-lookup")).json()).toEqual({
+        enabled: false,
+      });
+      const response = await lookup();
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(await response.json()).toMatchObject({
+        registrationNumber: "AB12CDE",
+        vehicleName: "FORD FIESTA",
+        tankCapacityLitres: 42,
+        mpg: 52.3,
+      });
+      expect(http).toHaveBeenCalledWith(
+        "https://api.oneautoapi.com/ukvehicledata/vehicleandmodeldetailsfromvrm?vehicle_registration_mark=AB12CDE",
+        expect.objectContaining({
+          redirect: "manual",
+          headers: {
+            "x-api-key": "private-vehicle-key",
+            Accept: "application/json",
+          },
+        }),
+      );
+      const concurrent = await Promise.all(
+        Array.from({ length: 12 }, () => lookup()),
+      );
+      expect(concurrent.filter((r) => r.status === 200)).toHaveLength(9);
+      expect(concurrent.filter((r) => r.status === 429)).toHaveLength(3);
+      expect(http).toHaveBeenCalledTimes(10);
+      lookupNow = new Date(now.getTime() + 86_400_000);
+      expect((await lookup()).status).toBe(200);
+      expect(http).toHaveBeenCalledTimes(11);
+      const attempts = await db.query.rateLimit.findMany({
+        where: { key: { like: "vehicle-lookup:%" } },
+      });
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0]!.count).toBe(1);
+      expect(JSON.stringify(attempts)).not.toContain("AB12CDE");
+    });
+    it("sanitises vehicle-provider errors, refuses redirects and never retries a paid request", async () => {
+      const http = vi.fn(
+        async () => new Response("private-upstream-body", { status: 503 }),
+      );
+      const lookupApp = createApp({
+        config: { ...config, oneAutoApiKey: "private-vehicle-key" },
+        clock: () => new Date(now.getTime() + 2 * 86_400_000),
+        httpClient: http,
+      });
+      for (const status of [204, 302, 403, 429, 500]) {
+        http.mockImplementationOnce(async () => new Response(null, { status }));
+        const response = await lookupApp.request(
+          "http://localhost:3100/api/v1/me/vehicle-lookup",
+          {
+            method: "POST",
+            headers: { ...headers, cookie },
+            body: JSON.stringify({ registrationNumber: "AB12CDE" }),
+          },
+        );
+        expect(response.status).toBe(status === 204 ? 404 : 503);
+        expect(await response.text()).not.toMatch(
+          /private-|AB12CDE|oneautoapi/,
+        );
+      }
+      expect(http).toHaveBeenCalledTimes(5);
+    });
     it("creates only one daily message under concurrent scheduler runs", async () => {
       // Notification contact verification is independent of the Google session.
       await db

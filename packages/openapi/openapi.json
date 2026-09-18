@@ -650,6 +650,94 @@
           "usdPerGbp"
         ]
       },
+      "VehicleLookupAvailability": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "VehicleLookup": {
+        "type": "object",
+        "properties": {
+          "registrationNumber": {
+            "type": "string"
+          },
+          "vehicleName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "fuelType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "tankCapacityLitres": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 15,
+            "maximum": 150
+          },
+          "mpg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 10,
+            "maximum": 150
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "UK Vehicle Data via One Auto API"
+            ]
+          }
+        },
+        "required": [
+          "registrationNumber",
+          "vehicleName",
+          "fuelType",
+          "year",
+          "tankCapacityLitres",
+          "mpg",
+          "warnings",
+          "source"
+        ]
+      },
+      "VehicleLookupInput": {
+        "type": "object",
+        "properties": {
+          "registrationNumber": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 10,
+            "pattern": "^(?=.*[a-z])(?=.*\\d)[a-z\\d ]+$/i"
+          }
+        },
+        "required": [
+          "registrationNumber"
+        ]
+      },
       "NearbyStations": {
         "type": "object",
         "properties": {
@@ -1880,6 +1968,207 @@
                     "checked",
                     "stubbed"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid session cookie is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin or credentials rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data unavailable or stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/vehicle-lookup": {
+      "get": {
+        "operationId": "getVehicleLookupAvailability",
+        "tags": [
+          "Driver"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Check whether registration lookup is available",
+        "responses": {
+          "200": {
+            "description": "Lookup availability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleLookupAvailability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid session cookie is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin or credentials rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data unavailable or stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "lookupVehicle",
+        "tags": [
+          "Driver"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Look up car specifications by UK registration",
+        "description": "Uses UK Vehicle Data via One Auto API. Maximum 10 attempts per user per UTC day. Registration is sent in the body and is not stored. Tank capacity and combined imperial MPG can be missing; users must review specifications before saving. No automatic retries.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleLookupInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Editable car specifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleLookup"
                 }
               }
             }

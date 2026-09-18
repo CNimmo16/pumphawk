@@ -6,12 +6,13 @@ export async function providerText(
   url: string,
   init: RequestInit = {},
   maxBytes = 24_000_000,
+  timeoutMs = 45_000,
 ) {
   const response = await http(url, {
     ...init,
     // Workers supports manual/follow only; reject redirects via the status check.
     redirect: "manual",
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
     await response.body?.cancel();
