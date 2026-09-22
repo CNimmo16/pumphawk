@@ -43,6 +43,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:integration
+      - name: Validate native SDK and iOS/Android JavaScript bundles
+        run: pnpm native:check
       - run: pnpm build
 
   deploy:

@@ -24,7 +24,8 @@ export function buildInjector(
   transport: SmsTransport = new StubSmsTransport(),
   httpClient: HttpClient = fetch,
 ) {
-  return createInjector()
+  const root = createInjector();
+  const services = root
     .provideValue("config", config)
     .provideValue("httpClient", httpClient)
     .provideValue("clock", clock)
@@ -42,5 +43,11 @@ export function buildInjector(
     .provideClass("driverService", DriverService)
     .provideClass("vehicleService", VehicleService)
     .provideClass("alertService", AlertService);
+  // Providers form a parent/child tree. Disposing only the last provider
+  // leaves its parents (including the request's database pool) alive.
+  return {
+    resolve: services.resolve.bind(services),
+    dispose: () => root.dispose(),
+  };
 }
 export type AppInjector = ReturnType<typeof buildInjector>;

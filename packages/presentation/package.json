@@ -1,0 +1,12 @@
+{
+  "name": "@pump-hawk/presentation",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./national-outlook": "./src/national-outlook.ts",
+    "./station-prices": "./src/station-prices.ts"
+  },
+  "dependencies": {
+    "@pump-hawk/openapi": "workspace:*"
+  }
+}

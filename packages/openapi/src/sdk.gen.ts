@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityErrors, GetVehicleLookupAvailabilityResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, LookupVehicleData, LookupVehicleErrors, LookupVehicleResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses } from './types.gen';
+import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityErrors, GetVehicleLookupAvailabilityResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, LookupVehicleData, LookupVehicleErrors, LookupVehicleResponses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailErrors, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailErrors, PostApiAuthSignUpEmailResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses, UpdateTrackedStationsData, UpdateTrackedStationsErrors, UpdateTrackedStationsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -172,6 +172,23 @@ export const getTrackedStations = <ThrowOnError extends boolean = false>(options
 });
 
 /**
+ * Change tracked stations without resetting the tank reading or car details
+ */
+export const updateTrackedStations = <ThrowOnError extends boolean = false>(options: Options<UpdateTrackedStationsData, ThrowOnError>): RequestResult<UpdateTrackedStationsResponses, UpdateTrackedStationsErrors, ThrowOnError> => (options.client ?? client).put<UpdateTrackedStationsResponses, UpdateTrackedStationsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }],
+    url: '/api/v1/me/stations',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Save car, weekly mileage and one to three nearby stations atomically
  */
 export const saveOnboarding = <ThrowOnError extends boolean = false>(options: Options<SaveOnboardingData, ThrowOnError>): RequestResult<SaveOnboardingResponses, SaveOnboardingErrors, ThrowOnError> => (options.client ?? client).put<SaveOnboardingResponses, SaveOnboardingErrors, ThrowOnError>({
@@ -228,6 +245,34 @@ export const getWeeklyOutlook = <ThrowOnError extends boolean = false>(options?:
  */
 export const signInWithGoogle = <ThrowOnError extends boolean = false>(options: Options<SignInWithGoogleData, ThrowOnError>): RequestResult<SignInWithGoogleResponses, SignInWithGoogleErrors, ThrowOnError> => (options.client ?? client).post<SignInWithGoogleResponses, SignInWithGoogleErrors, ThrowOnError>({
     url: '/api/auth/sign-in/social',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Create a local development account
+ *
+ * Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.
+ */
+export const postApiAuthSignUpEmail = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthSignUpEmailData, ThrowOnError>): RequestResult<PostApiAuthSignUpEmailResponses, PostApiAuthSignUpEmailErrors, ThrowOnError> => (options.client ?? client).post<PostApiAuthSignUpEmailResponses, PostApiAuthSignUpEmailErrors, ThrowOnError>({
+    url: '/api/auth/sign-up/email',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sign in to a local development account
+ *
+ * Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.
+ */
+export const postApiAuthSignInEmail = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthSignInEmailData, ThrowOnError>): RequestResult<PostApiAuthSignInEmailResponses, PostApiAuthSignInEmailErrors, ThrowOnError> => (options.client ?? client).post<PostApiAuthSignInEmailResponses, PostApiAuthSignInEmailErrors, ThrowOnError>({
+    url: '/api/auth/sign-in/email',
     ...options,
     headers: {
         'Content-Type': 'application/json',

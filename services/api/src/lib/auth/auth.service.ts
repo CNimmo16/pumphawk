@@ -1,8 +1,13 @@
 import { betterAuth } from "better-auth";
+import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { DbService } from "../db/db.service";
 import * as schema from "../db/schema";
 import type { Config } from "../../app/config";
+// This is a server-side environment check, never a client-supplied flag.
+export const localEmailAuthEnabled = (config: Config) =>
+  config.environment === "development";
+
 export function createAuth(config: Config, store: DbService) {
   return betterAuth({
     appName: "Pump Hawk",
@@ -14,8 +19,13 @@ export function createAuth(config: Config, store: DbService) {
       schema,
       transaction: true,
     }),
-    trustedOrigins: [config.appOrigin],
-    emailAndPassword: { enabled: false },
+    trustedOrigins: [config.appOrigin, "pumphawk://"],
+    plugins: [expo()],
+    emailAndPassword: {
+      enabled: localEmailAuthEnabled(config),
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+    },
     socialProviders:
       config.googleClientId && config.googleClientSecret
         ? {

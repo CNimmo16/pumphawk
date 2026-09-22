@@ -7,6 +7,7 @@ import {
   NearbySchema,
   TrackedSchema,
   OnboardingSchema,
+  StationSelectionSchema,
   TankInput,
   z,
   ErrorSchema,
@@ -30,6 +31,7 @@ import { recommend } from "../pricing/recommendation";
 import { demoObservations, forecastPrices } from "../pricing/forecast";
 import type { MiddlewareHandler } from "hono";
 import type { HttpClient } from "../data/http";
+import { localEmailAuthEnabled } from "../lib/auth/auth.service";
 export type AppEnv = {
   Bindings: Env;
   Variables: { injector: AppInjector; userId: string };
@@ -82,7 +84,7 @@ export const openApiDocument = {
     title: "Pump Hawk API",
     version: "0.1.0",
     description:
-      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
+      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
   },
   servers: [{ url: "/" }],
   tags: [
@@ -161,7 +163,9 @@ export function createApp(
         c.header("Cache-Control", "no-store");
         if (
           !["GET", "HEAD"].includes(c.req.method) &&
-          c.req.header("origin") !== config.appOrigin
+          ![config.appOrigin, "pumphawk://"].includes(
+            c.req.header("origin") ?? "",
+          )
         )
           throw new AppError(
             "ORIGIN_REJECTED",
@@ -603,6 +607,35 @@ export function createApp(
   app.openapi(
     createRoute({
       method: "put",
+      path: "/api/v1/me/stations",
+      operationId: "updateTrackedStations",
+      tags: ["Driver"],
+      security: protectedSecurity,
+      summary:
+        "Change tracked stations without resetting the tank reading or car details",
+      request: {
+        body: {
+          required: true,
+          content: { "application/json": { schema: StationSelectionSchema } },
+        },
+      },
+      responses: {
+        200: json(DriverSchema, "Stations updated; driver and gauge unchanged"),
+        ...errors,
+      },
+    }),
+    async (c) =>
+      c.json(
+        await c
+          .get("injector")
+          .resolve("stationService")
+          .updateTracked(c.get("userId"), c.req.valid("json")),
+        200,
+      ),
+  );
+  app.openapi(
+    createRoute({
+      method: "put",
       path: "/api/v1/me/onboarding",
       operationId: "saveOnboarding",
       tags: ["Driver"],
@@ -781,6 +814,51 @@ export function createApp(
       );
     return c.get("injector").resolve("authService").auth.handler(c.req.raw);
   });
+  for (const action of ["sign-up", "sign-in"] as const) {
+    const path = `/api/auth/${action}/email` as const;
+    app.openAPIRegistry.registerPath({
+      method: "post",
+      path,
+      tags: ["Auth"],
+      summary: `${action === "sign-up" ? "Create" : "Sign in to"} a local development account`,
+      description:
+        "Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.",
+      request: {
+        body: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: z.object({
+                email: z.email(),
+                password: z
+                  .string()
+                  .min(action === "sign-up" ? 8 : 1)
+                  .max(128),
+                ...(action === "sign-up" ? { name: z.string().min(1) } : {}),
+              }),
+            },
+          },
+        },
+      },
+      responses: {
+        200: json(
+          z.unknown(),
+          "Better Auth user and session; sets session cookie",
+        ),
+        400: json(authError, "Invalid credentials or account details"),
+        401: json(authError, "Invalid email or password"),
+        403: json(authError, "Untrusted origin"),
+        404: errors[404],
+        422: json(authError, "Account could not be created"),
+        429: json(authError, "Too many attempts"),
+      },
+    });
+    app.post(path, (c) => {
+      if (!localEmailAuthEnabled(c.get("injector").resolve("config")))
+        return c.notFound();
+      return c.get("injector").resolve("authService").auth.handler(c.req.raw);
+    });
+  }
   app.openAPIRegistry.registerPath({
     method: "get",
     path: "/api/auth/callback/google",

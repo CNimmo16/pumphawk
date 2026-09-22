@@ -12,3 +12,5 @@ services/api/drizzle
 
 services/api/data
 services/api/src/pricing/model-fixtures.json
+
+apps/native/src/uniwind-types.d.ts

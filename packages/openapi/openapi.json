@@ -3,7 +3,7 @@
   "info": {
     "title": "Pump Hawk API",
     "version": "0.1.0",
-    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret."
+    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret."
   },
   "servers": [
     {
@@ -894,12 +894,9 @@
           "since"
         ]
       },
-      "OnboardingInput": {
+      "StationSelection": {
         "type": "object",
         "properties": {
-          "driver": {
-            "$ref": "#/components/schemas/DriverInput"
-          },
           "location": {
             "type": "object",
             "properties": {
@@ -931,9 +928,50 @@
           }
         },
         "required": [
-          "driver",
           "location",
           "stationIds"
+        ]
+      },
+      "OnboardingInput": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": 49,
+                "maximum": 61
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -9,
+                "maximum": 2
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ]
+          },
+          "stationIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "driver": {
+            "$ref": "#/components/schemas/DriverInput"
+          }
+        },
+        "required": [
+          "location",
+          "stationIds",
+          "driver"
         ]
       },
       "TankInput": {
@@ -2470,6 +2508,110 @@
             }
           }
         }
+      },
+      "put": {
+        "operationId": "updateTrackedStations",
+        "tags": [
+          "Driver"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Change tracked stations without resetting the tank reading or car details",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stations updated; driver and gauge unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Driver"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid session cookie is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin or credentials rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data unavailable or stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/me/onboarding": {
@@ -2954,6 +3096,339 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sign-up/email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create a local development account",
+        "description": "Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Better Auth user and session; sets session cookie",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials or account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Untrusted origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Account could not be created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sign-in/email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Sign in to a local development account",
+        "description": "Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Better Auth user and session; sets session cookie",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials or account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Untrusted origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Account could not be created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
                 }
               }
             }

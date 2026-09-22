@@ -4,7 +4,7 @@ Registration-based car setup is optional: see [VEHICLE_LOOKUP.md](./VEHICLE_LOOK
 
 A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth Google login, typed-inject services and a generated Hey API/TanStack Query client.
 
-**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a 14-day forecast with signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS notifications still use a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
+**Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a combined outlook with seven daily predictions and later weekly observations, including signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS notifications still use a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
 
 ## Run locally
 
@@ -83,7 +83,11 @@ Set `MARKET_DATA_MODE=sample` in `services/api/.dev.vars` and restart the API de
 
 ## Trained models
 
-The dashboard uses the daily ridge model for the 14-day road-ahead chart and a separate weekly Huber model for the official sales-weighted UK outlook. Daily buying advice evaluates meaningful savings over reachable dates in the next seven days; days 8–14 from that model are informational. A meaningful later rise in the separate weekly outlook can recommend an early fill even with plenty of fuel remaining. A worthwhile short-term dip takes priority; weekly predictions are never interpolated into daily prices. Tooltips show fitted pence-per-litre contributions. Empirical ranges are not guaranteed probabilities, especially at day 14.
+The web and native dashboards share one **The road ahead** chart. It shows the previous 14 calendar days of observed station-average prices, daily predictions through `asOf + 7 days`, then only the available official weekly prediction dates strictly after that cutoff. Weekly dots and range bars use their original sales-weighted benchmark; they are not rebased, joined onto the daily line, or interpolated into daily prices. Because weekly forecasts cover only two official observations from their reference date, some releases do not extend beyond the moving seven-day cutoff; the chart explains this and waits for new data. Sample/demo daily data is shown without live weekly predictions. If daily data is unavailable, fresh weekly observations can still appear in the same card.
+
+The shared presentation policy lives in `packages/presentation/src/national-outlook.ts`. A disagreement caution compares **changes from a matching observed reference date** at common forecast dates within the daily seven-day window. It appears when the empirical change ranges do not overlap, so a constant offset between benchmarks does not trigger it. This is a conservative display heuristic, not a calibrated statistical test; different station weighting and issue dates can contribute. It requires fresh fitted daily and weekly forecasts and matching observed history. Missing comparisons are not evidence of agreement.
+
+Daily buying advice still evaluates meaningful savings over reachable dates in the next seven days. A meaningful later rise in the weekly model can recommend an early fill even with plenty of fuel remaining, while a worthwhile short-term dip takes priority. The chart change does not blend models or alter recommendation logic; the API retains all 14 daily predictions. Tooltips show each model's fitted pence-per-litre contributions relative to its own observed reference. Empirical ranges are not guaranteed probabilities.
 
 `pnpm data:bootstrap` imports genuine source-labelled daily/weekly history and the last-known observed-station baseline. It is idempotent and preserves existing observations. For local use of previously downloaded research markets, run `pnpm --filter @pump-hawk/api exec node --import tsx scripts/import-market-history.ts`. Production obtains market inputs through its daily provider job. `pnpm data:sync models` refreshes model observations and materialises forecasts; browser requests never contact data providers.
 
@@ -135,6 +139,7 @@ Do not hand-edit generated clients. Frontend queries/mutations consume `@pump-ha
 | -------- | ----------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
 | GET      | `/api/health`, `/api/docs`, `/api/openapi.json`       | Public                     | Health and documentation                                        |
 | POST     | `/api/auth/sign-in/social`                            | Rate limited               | Start Google signup/login                                       |
+| POST     | `/api/auth/sign-up/email`, `/api/auth/sign-in/email`  | Development server only    | Local email/password accounts; 404 in production                |
 | GET/POST | `/api/auth/get-session`, `/sign-out`                  | Cookie                     | Session/logout                                                  |
 | GET      | `/api/v1/forecast`                                    | Public                     | Actual history and next 14 days, bounds and signals             |
 | GET      | `/api/v1/demo`                                        | Public                     | Explicitly synthetic example                                    |
@@ -154,7 +159,7 @@ The dashboard can return `forecast: null`, `recommendation: null` and `forecastE
 
 ## SMS
 
-Google is the only sign-in method; phone sign-in, OTP routes and the local OTP endpoint are removed. SMS notifications retain `StubSmsTransport`, the outbox, consent flags, retries and scheduled evaluation at 08:00 Europe/London. No real SMS is sent yet. Alerts still require an opted-in driver and a stored verified notification phone number. Those fields and existing sessions are preserved; a Google account without a phone can use the app and simply receives no SMS. The text-alert card remains removed and new onboardings default to no alerts. Adding/verifying a notification phone independently of sign-in will be a separate flow before enabling SMS for new Google users.
+Google is the only production sign-in method. Local development servers also accept Better Auth email/password accounts; the simulator exposes this option as described in [the native setup guide](apps/native/README.md#local-sign-in-without-google). Both email endpoints and the underlying password provider are disabled outside `ENVIRONMENT=development`. Phone sign-in, OTP routes and the local OTP endpoint are removed. SMS notifications retain `StubSmsTransport`, the outbox, consent flags, retries and scheduled evaluation at 08:00 Europe/London. No real SMS is sent yet. Alerts still require an opted-in driver and a stored verified notification phone number. Those fields and existing sessions are preserved; a Google account without a phone can use the app and simply receives no SMS. The text-alert card remains removed and new onboardings default to no alerts. Adding/verifying a notification phone independently of sign-in will be a separate flow before enabling SMS for new Google users.
 
 Google identities are matched by their provider account, not by a phone number. Legacy phone-only users have placeholder emails and are not automatically merged with Google accounts. Their records remain intact; any account migration must explicitly link the correct identity.
 
@@ -175,3 +180,7 @@ Integration tests migrate/reset only the dedicated `pumphawk_test` database. Cus
 The [CI/deployment workflow](.github/workflows/production.yml) runs generated-contract checks, TypeScript, unit tests, PostgreSQL integration tests and Worker builds. Main-branch deployments migrate PostgreSQL, import genuine history, deploy the API and web Workers, bootstrap feeds and verify that both model endpoints are live.
 
 See [PRODUCTION.md](PRODUCTION.md) for required GitHub secrets, Neon connection settings, smoke checks and rollback. Production uses Neon’s pooled `DATABASE_URL` as a Worker secret and `DIRECT_DATABASE_URL` for migrations. Local development uses Docker PostgreSQL through `.dev.vars`.
+
+## Native app
+
+`apps/native` is the Expo Router iOS/Android app, using the same API and saved profiles as the website. It includes native maps, onboarding, both forecasts, tracked station histories and tank updates. Run `pnpm dev:native` after installing a development build. See [the native setup guide](apps/native/README.md) for EAS profiles, Android map configuration and device checks. `pnpm native:check` checks SDK compatibility and both JavaScript bundles without creating a native build.

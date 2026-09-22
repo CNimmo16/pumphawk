@@ -218,9 +218,8 @@ export const TrackedSchema = z
     since: z.iso.datetime(),
   })
   .openapi("TrackedStations");
-export const OnboardingSchema = z
+export const StationSelectionSchema = z
   .object({
-    driver: DriverInput,
     location: LocationSchema,
     stationIds: z.array(z.string().min(1).max(100)).min(1).max(3),
   })
@@ -228,7 +227,10 @@ export const OnboardingSchema = z
     message: "Choose different stations",
     path: ["stationIds"],
   })
-  .openapi("OnboardingInput");
+  .openapi("StationSelection");
+export const OnboardingSchema = StationSelectionSchema.safeExtend({
+  driver: DriverInput,
+}).openapi("OnboardingInput");
 export const TankInput = z
   .object({ currentLitres: z.number().min(0).max(150) })
   .openapi("TankInput");

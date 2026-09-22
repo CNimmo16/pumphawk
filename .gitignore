@@ -11,3 +11,8 @@ coverage/
 .DS_Store
 .local/
 services/api/wrangler.production.json
+
+# Expo-generated projects and local tooling
+apps/native/.expo/
+apps/native/ios/
+apps/native/android/

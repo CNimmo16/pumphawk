@@ -12,15 +12,17 @@
     "db:migrate": "pnpm --filter @pump-hawk/api db:migrate",
     "db:seed": "pnpm --filter @pump-hawk/api db:seed",
     "openapi": "pnpm --filter @pump-hawk/api openapi && pnpm --filter @pump-hawk/openapi generate",
-    "typecheck": "pnpm --filter @pump-hawk/api typecheck && pnpm --filter @pump-hawk/web typecheck",
-    "test": "pnpm --filter @pump-hawk/api test",
+    "typecheck": "pnpm --filter @pump-hawk/api typecheck && pnpm --filter @pump-hawk/web typecheck && pnpm --filter @pump-hawk/native typecheck",
+    "test": "pnpm --filter @pump-hawk/api test && pnpm --filter @pump-hawk/native test",
     "test:integration": "pnpm --filter @pump-hawk/api test:integration",
     "build": "pnpm openapi && pnpm --filter @pump-hawk/api build && pnpm --filter @pump-hawk/web build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "data:sync": "pnpm --filter @pump-hawk/api data:sync",
     "data:watch": "pnpm --filter @pump-hawk/api data:watch",
-    "data:bootstrap": "pnpm --filter @pump-hawk/api data:bootstrap"
+    "data:bootstrap": "pnpm --filter @pump-hawk/api data:bootstrap",
+    "dev:native": "pnpm --filter @pump-hawk/native dev",
+    "native:check": "pnpm --filter @pump-hawk/native check:dependencies && pnpm --filter @pump-hawk/native export:check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

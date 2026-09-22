@@ -27,7 +27,6 @@ import { AuthForm } from "../components/auth-form";
 import { DriverForm, TankForm } from "../components/driver-form";
 import { Modal } from "../components/modal";
 import { PriceChart, StationChart } from "../components/price-chart";
-import { WeeklyOutlookChart } from "../components/weekly-outlook";
 export const Route = createFileRoute("/")({ component: Dashboard });
 function HawkLogo() {
   return (
@@ -436,53 +435,21 @@ function Dashboard() {
                 <div className="section-heading">
                   <div>
                     <h2>The road ahead</h2>
-                    <p>UK E10 petrol · daily observations and 14-day outlook</p>
+                    <p>UK petrol · daily for 7 days, then weekly</p>
                   </div>
-                  <span className="period-pill">
-                    {forecast?.model === "daily-ridge"
-                      ? "Daily model"
-                      : "Price outlook"}
-                  </span>
+                  <span className="period-pill">UK outlook</span>
                 </div>
-                {forecast ? (
-                  <>
-                    <PriceChart forecast={forecast} />
-                    <div className="chart-note">
-                      <Info size={14} />
-                      <span>
-                        {forecast.mode === "sample"
-                          ? "Includes synthetic local pump history. "
-                          : forecast?.model === "daily-ridge"
-                            ? "Observed-station average, fixed at 08:00 UTC. Daily timing uses the first seven forecast days; the separate weekly outlook can recommend filling ahead of a later rise. "
-                            : "Heuristic fallback using the live open-station average. "}
-                        Shading is an empirical or illustrative range, not a
-                        guaranteed probability.
-                      </span>
-                    </div>
-                  </>
+                {forecast || weekly.data ? (
+                  <PriceChart
+                    forecast={forecast}
+                    weekly={weekly.data}
+                    weeklyLoading={weekly.isPending}
+                  />
                 ) : (
                   <div className="chart-empty" role="status">
-                    {national.error
+                    {national.error && weekly.error
                       ? errorMessage(national.error)
                       : "Loading the latest national prices…"}
-                  </div>
-                )}
-              </section>
-              <section className="card forecast-card" id="weekly-outlook">
-                <div className="section-heading">
-                  <div>
-                    <h2>Official UK outlook</h2>
-                    <p>Sales-weighted petrol · next two weekly observations</p>
-                  </div>
-                  <span className="period-pill">Weekly model</span>
-                </div>
-                {weekly.data ? (
-                  <WeeklyOutlookChart outlook={weekly.data} />
-                ) : (
-                  <div className="chart-empty" role="status">
-                    {weekly.isError
-                      ? errorMessage(weekly.error)
-                      : "Loading the official weekly outlook…"}
                   </div>
                 )}
               </section>
@@ -627,8 +594,14 @@ function Dashboard() {
             <ArrowRight size={15} />
           </summary>
           <p>
+            The chart shows seven daily predictions, then available weekly
+            predictions on their actual dates. The handover changes the national
+            benchmark. Weekly prices are not interpolated into daily
+            predictions.
+          </p>
+          <p>
             {forecast?.methodology ??
-              "The 14-day forecast combines actual E10 pump prices with GBP-converted petrol and crude futures. The model is a guide based on PRICES.md, with policy weights that have not yet been fitted or backtested."}
+              "The daily and weekly outlooks use UK pump prices and GBP-converted petrol and crude futures. When fitted daily predictions are unavailable, a heuristic fallback may be shown."}
           </p>
           {forecast?.warnings.map((w) => (
             <p key={w}>{w}</p>

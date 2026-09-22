@@ -199,13 +199,21 @@ export type TrackedStations = {
     since: string;
 };
 
-export type OnboardingInput = {
-    driver: DriverInput;
+export type StationSelection = {
     location: {
         latitude: number;
         longitude: number;
     };
     stationIds: Array<string>;
+};
+
+export type OnboardingInput = {
+    location: {
+        latitude: number;
+        longitude: number;
+    };
+    stationIds: Array<string>;
+    driver: DriverInput;
 };
 
 export type TankInput = {
@@ -919,6 +927,55 @@ export type GetTrackedStationsResponses = {
 
 export type GetTrackedStationsResponse = GetTrackedStationsResponses[keyof GetTrackedStationsResponses];
 
+export type UpdateTrackedStationsData = {
+    body: StationSelection;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/stations';
+};
+
+export type UpdateTrackedStationsErrors = {
+    /**
+     * Malformed or invalid request
+     */
+    400: ApiError;
+    /**
+     * A valid session cookie is required
+     */
+    401: ApiError;
+    /**
+     * Origin or credentials rejected
+     */
+    403: ApiError;
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Invalid input
+     */
+    422: ApiError;
+    /**
+     * Rate limit exceeded
+     */
+    429: ApiError;
+    /**
+     * Data unavailable or stale
+     */
+    503: ApiError;
+};
+
+export type UpdateTrackedStationsError = UpdateTrackedStationsErrors[keyof UpdateTrackedStationsErrors];
+
+export type UpdateTrackedStationsResponses = {
+    /**
+     * Stations updated; driver and gauge unchanged
+     */
+    200: Driver;
+};
+
+export type UpdateTrackedStationsResponse = UpdateTrackedStationsResponses[keyof UpdateTrackedStationsResponses];
+
 export type SaveOnboardingData = {
     body: OnboardingInput;
     path?: never;
@@ -1145,6 +1202,129 @@ export type SignInWithGoogleResponses = {
 };
 
 export type SignInWithGoogleResponse = SignInWithGoogleResponses[keyof SignInWithGoogleResponses];
+
+export type PostApiAuthSignUpEmailData = {
+    body: {
+        email: string;
+        password: string;
+        name: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/auth/sign-up/email';
+};
+
+export type PostApiAuthSignUpEmailErrors = {
+    /**
+     * Invalid credentials or account details
+     */
+    400: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Invalid email or password
+     */
+    401: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Untrusted origin
+     */
+    403: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Account could not be created
+     */
+    422: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Too many attempts
+     */
+    429: {
+        code: string;
+        message: string;
+    };
+};
+
+export type PostApiAuthSignUpEmailError = PostApiAuthSignUpEmailErrors[keyof PostApiAuthSignUpEmailErrors];
+
+export type PostApiAuthSignUpEmailResponses = {
+    /**
+     * Better Auth user and session; sets session cookie
+     */
+    200: unknown;
+};
+
+export type PostApiAuthSignInEmailData = {
+    body: {
+        email: string;
+        password: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/auth/sign-in/email';
+};
+
+export type PostApiAuthSignInEmailErrors = {
+    /**
+     * Invalid credentials or account details
+     */
+    400: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Invalid email or password
+     */
+    401: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Untrusted origin
+     */
+    403: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Account could not be created
+     */
+    422: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Too many attempts
+     */
+    429: {
+        code: string;
+        message: string;
+    };
+};
+
+export type PostApiAuthSignInEmailError = PostApiAuthSignInEmailErrors[keyof PostApiAuthSignInEmailErrors];
+
+export type PostApiAuthSignInEmailResponses = {
+    /**
+     * Better Auth user and session; sets session cookie
+     */
+    200: unknown;
+};
 
 export type GetApiAuthCallbackGoogleData = {
     body?: never;

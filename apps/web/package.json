@@ -20,7 +20,8 @@
     "lucide-react": "^0.577.0",
     "posthog-js": "^1.433.6",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "@pump-hawk/presentation": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.10",

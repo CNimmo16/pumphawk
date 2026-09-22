@@ -470,6 +470,7 @@ h1 {
 }
 .chart-legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 21px;
   align-items: center;
   justify-content: center;
@@ -495,6 +496,29 @@ h1 {
   height: 8px;
   width: 13px;
   background: #e3edcf;
+}
+.weekly-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6c78ab;
+}
+.outlook-note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #76836d;
+}
+.outlook-warning {
+  margin: 14px 0;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: #eddeb6;
+  color: #243b30;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.outlook-warning p {
+  margin: 4px 0 0;
 }
 .chart-note {
   display: flex;

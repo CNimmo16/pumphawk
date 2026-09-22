@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getVehicleLookupAvailability, getWeeklyOutlook, ingestObservations, lookupVehicle, type Options, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank } from '../sdk.gen';
-import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, LookupVehicleData, LookupVehicleError, LookupVehicleResponse, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse } from '../types.gen';
+import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getVehicleLookupAvailability, getWeeklyOutlook, ingestObservations, lookupVehicle, type Options, postApiAuthSignInEmail, postApiAuthSignUpEmail, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank, updateTrackedStations } from '../sdk.gen';
+import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, LookupVehicleData, LookupVehicleError, LookupVehicleResponse, PostApiAuthSignInEmailData, PostApiAuthSignInEmailError, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailError, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, UpdateTrackedStationsData, UpdateTrackedStationsError, UpdateTrackedStationsResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -279,6 +279,23 @@ export const getTrackedStationsOptions = (options?: Options<GetTrackedStationsDa
 });
 
 /**
+ * Change tracked stations without resetting the tank reading or car details
+ */
+export const updateTrackedStationsMutation = (options?: Partial<Options<UpdateTrackedStationsData>>): UseMutationOptions<UpdateTrackedStationsResponse, UpdateTrackedStationsError, Options<UpdateTrackedStationsData>> => {
+    const mutationOptions: UseMutationOptions<UpdateTrackedStationsResponse, UpdateTrackedStationsError, Options<UpdateTrackedStationsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateTrackedStations({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Save car, weekly mileage and one to three nearby stations atomically
  */
 export const saveOnboardingMutation = (options?: Partial<Options<SaveOnboardingData>>): UseMutationOptions<SaveOnboardingResponse, SaveOnboardingError, Options<SaveOnboardingData>> => {
@@ -358,6 +375,44 @@ export const signInWithGoogleMutation = (options?: Partial<Options<SignInWithGoo
     const mutationOptions: UseMutationOptions<SignInWithGoogleResponse, SignInWithGoogleError, Options<SignInWithGoogleData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await signInWithGoogle({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Create a local development account
+ *
+ * Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.
+ */
+export const postApiAuthSignUpEmailMutation = (options?: Partial<Options<PostApiAuthSignUpEmailData>>): UseMutationOptions<unknown, PostApiAuthSignUpEmailError, Options<PostApiAuthSignUpEmailData>> => {
+    const mutationOptions: UseMutationOptions<unknown, PostApiAuthSignUpEmailError, Options<PostApiAuthSignUpEmailData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await postApiAuthSignUpEmail({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Sign in to a local development account
+ *
+ * Available only when the server ENVIRONMENT is development. Returns 404 in production and test. Better Auth hashes passwords, validates origins and issues the normal session cookie; no verification email is sent. Native clients use the Better Auth Expo SDK.
+ */
+export const postApiAuthSignInEmailMutation = (options?: Partial<Options<PostApiAuthSignInEmailData>>): UseMutationOptions<unknown, PostApiAuthSignInEmailError, Options<PostApiAuthSignInEmailData>> => {
+    const mutationOptions: UseMutationOptions<unknown, PostApiAuthSignInEmailError, Options<PostApiAuthSignInEmailData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await postApiAuthSignInEmail({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

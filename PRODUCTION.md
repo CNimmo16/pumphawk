@@ -105,3 +105,7 @@ After deployment, verify the uploaded symbol sets in the selected PostHog projec
 Provider requests use manual redirects, reject non-success statuses, and never forward credentials to a redirect target. Daily/hourly sync claims permit at most three attempts per period, only retry failed jobs, and never repeat a completed download. Running or exhausted jobs return `SYNC_UNAVAILABLE` rather than falsely reporting success. Inspect Cloudflare/PostHog before any manual recovery of exhausted/stuck jobs; retries can incur additional Databento download charges (each download remains cost-capped).
 
 SDK guidance: https://posthog.com/docs/libraries/cloudflare-workers and https://posthog.com/docs/error-tracking/installation/web.
+
+## Native client
+
+The Expo app in `apps/native` uses this API. Better Auth includes its Expo plugin and trusts the `pumphawk://` return scheme. Authenticated application writes accept exactly `APP_ORIGIN` or `pumphawk://`; session authentication and browser origin checks remain required. No API/database secrets belong in the native bundle. Native Google login uses the existing Google HTTPS callback followed by a secure-store session handoff to the app. See [native setup](apps/native/README.md) for build-time configuration. The workflow validates native bundles but does not submit an EAS build or publish an app-store release.

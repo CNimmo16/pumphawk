@@ -1,5 +1,10 @@
 import { eq } from "drizzle-orm";
-import type { z, OnboardingSchema, Station } from "@pump-hawk/contracts";
+import type {
+  z,
+  OnboardingSchema,
+  StationSelectionSchema,
+  Station,
+} from "@pump-hawk/contracts";
 import { DbService } from "../lib/db/db.service";
 import {
   driver,
@@ -101,7 +106,21 @@ export class StationService {
       })),
     };
   }
+  async updateTracked(
+    userId: string,
+    input: z.infer<typeof StationSelectionSchema>,
+  ) {
+    return this.saveSelection(userId, input);
+  }
   async onboard(userId: string, input: z.infer<typeof OnboardingSchema>) {
+    return this.saveSelection(userId, input);
+  }
+  private async saveSelection(
+    userId: string,
+    input: z.infer<typeof StationSelectionSchema> & {
+      driver?: z.infer<typeof OnboardingSchema>["driver"];
+    },
+  ) {
     const nearby = await this.nearby(input.location);
     if (
       input.stationIds.length < 1 ||
@@ -124,16 +143,31 @@ export class StationService {
         503,
       );
     return this.store.db.transaction(async (tx) => {
-      const values = {
-        ...driverValues(input.driver, this.clock()),
-        onboardingComplete: true,
-      };
-      const [saved] = await tx
-        .insert(driver)
-        .values({ ...values, userId })
-        .onConflictDoUpdate({ target: driver.userId, set: values })
-        .returning();
-      // The upsert holds a row lock for this user, serialising simultaneous station selections.
+      const values = input.driver
+        ? {
+            ...driverValues(input.driver, this.clock()),
+            onboardingComplete: true,
+          }
+        : undefined;
+      // Both paths lock the driver row to serialize simultaneous selections.
+      // SELECT FOR UPDATE is needed here; relational .query has no lock option.
+      const [saved] = values
+        ? await tx
+            .insert(driver)
+            .values({ ...values, userId })
+            .onConflictDoUpdate({ target: driver.userId, set: values })
+            .returning()
+        : await tx
+            .select()
+            .from(driver)
+            .where(eq(driver.userId, userId))
+            .for("update");
+      if (!saved?.onboardingComplete)
+        throw new AppError(
+          "DRIVER_NOT_FOUND",
+          "Complete car onboarding before editing stations.",
+          404,
+        );
       await tx.delete(trackedStation).where(eq(trackedStation.userId, userId));
       await tx
         .insert(trackedStation)

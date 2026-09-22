@@ -106,13 +106,13 @@ const cookies = (response: Response) =>
     .getSetCookie()
     .map((c) => c.split(";")[0])
     .join("; ");
-async function startGoogle() {
+async function startGoogle(native = false) {
   const response = await req(
     "/api/auth/sign-in/social",
     "POST",
     {
       provider: "google",
-      callbackURL: "/",
+      callbackURL: native ? "pumphawk:///" : "/",
       errorCallbackURL: "/?authError=google",
     },
     "",
@@ -132,8 +132,8 @@ async function startGoogle() {
   ]);
   return { state: url.searchParams.get("state")!, cookie: cookies(response) };
 }
-async function login(subject: string) {
-  const started = await startGoogle();
+async function login(subject: string, native = false) {
+  const started = await startGoogle(native);
   const mock = vi
     .spyOn(globalThis, "fetch")
     .mockImplementation(async (input, init) => {
@@ -161,7 +161,11 @@ async function login(subject: string) {
       started.cookie,
     );
     expect(verified.status, await verified.clone().text()).toBe(302);
-    expect(verified.headers.get("location")).toBe("/");
+    if (native) {
+      const location = new URL(verified.headers.get("location")!);
+      expect(location.protocol).toBe("pumphawk:");
+      expect(location.searchParams.get("cookie")).toContain("session_token");
+    } else expect(verified.headers.get("location")).toBe("/");
     const session = cookies(verified);
     expect(session).toContain("session_token");
     return { session, started };
@@ -240,6 +244,106 @@ describe.sequential(
         await db.query.smsMessage.findMany({ where: { kind: "otp" } }),
       ).toEqual([]);
     });
+    it("creates local email accounts and issues normal sessions, while rejecting bad passwords and origins", async () => {
+      const localApp = createApp({
+        config: { ...config, environment: "development" },
+      });
+      const email = "simulator-local@example.test";
+      const password = "local-test-password-123";
+      const localRequest = (path: string, body: object, session = "") =>
+        localApp.request(`http://localhost:3100${path}`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "expo-origin": "pumphawk://",
+            "cf-connecting-ip": "127.0.0.30",
+            ...(session ? { cookie: session } : {}),
+          },
+          body: JSON.stringify(body),
+        });
+      const signup = await localRequest("/api/auth/sign-up/email", {
+        email,
+        password,
+        name: "Simulator driver",
+      });
+      expect(signup.status, await signup.clone().text()).toBe(200);
+      const firstSession = cookies(signup);
+      expect(firstSession).toContain("session_token");
+      const saved = await db.query.user.findFirst({ where: { email } });
+      expect(saved?.emailVerified).toBe(false);
+      const credential = await db.query.account.findFirst({
+        where: { userId: saved!.id, providerId: "credential" },
+      });
+      expect(credential?.password).toBeTruthy();
+      expect(credential?.password).not.toBe(password);
+      const current = await localApp.request(
+        "http://localhost:3100/api/auth/get-session",
+        { headers: { cookie: firstSession } },
+      );
+      expect(
+        ((await current.json()) as { user: { email: string } }).user.email,
+      ).toBe(email);
+      expect(
+        (await localRequest("/api/auth/sign-out", {}, firstSession)).status,
+      ).toBe(200);
+      const badPassword = await localRequest("/api/auth/sign-in/email", {
+        email,
+        password: "incorrect-password",
+      });
+      expect(badPassword.status).toBe(401);
+      expect(cookies(badPassword)).not.toContain("session_token");
+      const signin = await localRequest("/api/auth/sign-in/email", {
+        email,
+        password,
+      });
+      expect(signin.status, await signin.clone().text()).toBe(200);
+      const privateData = await localApp.request(
+        "http://localhost:3100/api/v1/me/driver",
+        { headers: { cookie: cookies(signin) } },
+      );
+      expect(privateData.status).toBe(404);
+      expect(await privateData.json()).toMatchObject({
+        error: { code: "DRIVER_NOT_FOUND" },
+      });
+      const untrusted = await localApp.request(
+        "http://localhost:3100/api/auth/sign-in/email",
+        {
+          method: "POST",
+          headers: { ...headers, origin: "https://evil.example" },
+          body: JSON.stringify({ email, password }),
+        },
+      );
+      expect(untrusted.status).toBe(403);
+    });
+    it("keeps local email signup and sign-in disabled in production, including for existing local accounts", async () => {
+      const productionConfig: Config = { ...config, environment: "production" };
+      const productionApp = createApp({ config: productionConfig });
+      const injector = buildInjector(productionConfig);
+      try {
+        expect(
+          injector.resolve("authService").auth.options.emailAndPassword
+            ?.enabled,
+        ).toBe(false);
+      } finally {
+        await injector.dispose();
+      }
+      for (const action of ["sign-in", "sign-up"]) {
+        const response = await productionApp.request(
+          `http://localhost:3100/api/auth/${action}/email`,
+          {
+            method: "POST",
+            headers: { ...headers, "expo-origin": "pumphawk://" },
+            body: JSON.stringify({
+              email: "simulator-local@example.test",
+              password: "local-test-password-123",
+              name: "Simulator driver",
+            }),
+          },
+        );
+        expect(response.status).toBe(404);
+        expect(response.headers.get("set-cookie")).toBeNull();
+      }
+    });
     it("signs up through Google with PKCE and a real session, without a phone number", async () => {
       const result = await login("driver-one");
       cookie = result.session;
@@ -303,6 +407,46 @@ describe.sequential(
       const dash = DashboardSchema.parse(await response.json());
       expect(DashboardSchema.safeParse(dash).success).toBe(true);
       expect(dash.recommendation!.action).toBe("top-up");
+    });
+    it("supports native Google callbacks and authenticated writes without relaxing browser origin checks", async () => {
+      const native = await login("native-driver", true);
+      const write = (origin: string, session = native.session) =>
+        app.request("http://localhost:3100/api/v1/me/driver", {
+          method: "PUT",
+          headers: { ...headers, origin, cookie: session },
+          body: JSON.stringify({ ...car, smsEnabled: false }),
+        });
+      expect((await write("pumphawk://")).status).toBe(200);
+      expect((await write("pumphawk://", "")).status).toBe(401);
+      expect((await write("pumphawk://evil.example")).status).toBe(403);
+      expect((await write("https://evil.example")).status).toBe(403);
+      expect(
+        (
+          await app.request("http://localhost:3100/api/auth/sign-in/social", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "expo-origin": "pumphawk://",
+              "cf-connecting-ip": "127.0.0.2",
+            },
+            body: JSON.stringify({
+              provider: "google",
+              callbackURL: "pumphawk:///",
+              disableRedirect: true,
+            }),
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await req(
+            "/api/auth/sign-in/social",
+            "POST",
+            { provider: "google", callbackURL: "untrusted-app:///" },
+            "",
+          )
+        ).status,
+      ).toBe(403);
     });
     it("protects registration lookup, normalises plates and atomically limits paid requests", async () => {
       const data = {
@@ -681,6 +825,51 @@ describe.sequential(
       };
       expect(updated.currentLitres).toBe(22);
       expect(updated.weekdayMiles).toEqual(body.driver.weekdayMiles);
+      // Editing just the regular stops must not pretend the driver checked the gauge again.
+      const beforeStationEdit = await (await req("/api/v1/me/driver")).json();
+      const later = createApp({
+        config,
+        clock: () => new Date(+now + 3600000),
+      });
+      const stationEdit = await later.request(
+        "http://localhost:3100/api/v1/me/stations",
+        {
+          method: "PUT",
+          headers: { ...headers, origin: "pumphawk://", cookie },
+          body: JSON.stringify({ location, stationIds: ["test-0", "test-1"] }),
+        },
+      );
+      expect(stationEdit.status).toBe(200);
+      expect(await stationEdit.json()).toEqual(beforeStationEdit);
+      expect(await (await req("/api/v1/me/driver")).json()).toEqual(
+        beforeStationEdit,
+      );
+      expect(
+        (
+          await req("/api/v1/me/stations", "PUT", {
+            location,
+            stationIds: ["test-4"],
+          })
+        ).status,
+      ).toBe(422);
+      expect(
+        (
+          await req("/api/v1/me/stations", "PUT", {
+            location,
+            stationIds: ["test-0", "test-0"],
+          })
+        ).status,
+      ).toBe(422);
+      expect(
+        (
+          await req(
+            "/api/v1/me/stations",
+            "PUT",
+            { location, stationIds: ["test-0"] },
+            secondCookie,
+          )
+        ).status,
+      ).toBe(404);
     });
     it("claims a daily market job once across concurrent requests and persists its observations", async () => {
       const a = buildInjector(config, () => now),

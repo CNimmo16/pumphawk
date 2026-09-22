@@ -1,5 +1,13 @@
 import { useRef, useState } from "react";
-import type { Forecast, TrackedStations } from "@pump-hawk/openapi/types";
+import type {
+  Forecast,
+  WeeklyOutlook,
+  TrackedStations,
+} from "@pump-hawk/openapi/types";
+import {
+  addDays,
+  buildNationalOutlook,
+} from "@pump-hawk/presentation/national-outlook";
 import { dateLabel } from "../lib/api";
 import { ForecastTooltip } from "./forecast-tooltip";
 const W = 850,
@@ -9,59 +17,68 @@ const W = 850,
   top = 24,
   bottom = 40;
 const signed = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}p`;
-export function PriceChart({ forecast }: { forecast: Forecast }) {
+export function PriceChart({
+  forecast,
+  weekly,
+  weeklyLoading,
+}: {
+  forecast?: Forecast;
+  weekly?: WeeklyOutlook;
+  weeklyLoading?: boolean;
+}) {
   const [active, setActive] = useState<string | null>(null);
   const selectedPoint = useRef<SVGCircleElement>(null);
-  const today = forecast.points[0]!.date,
-    from = new Date(Date.parse(today) - 13 * 86400000)
-      .toISOString()
-      .slice(0, 10),
-    to = forecast.points.at(-1)!.date;
-  const history = forecast.history.filter((p) => p.date >= from),
-    future = forecast.points;
-  const low =
-      Math.floor(
-        (Math.min(
-          ...history.map((p) => p.pricePence),
-          ...future.map((p) => p.lowPence),
-        ) -
-          1) /
-          2,
-      ) * 2,
-    high =
-      Math.ceil(
-        (Math.max(
-          ...history.map((p) => p.pricePence),
-          ...future.map((p) => p.highPence),
-        ) +
-          1) /
-          2,
-      ) * 2;
+  const outlook = buildNationalOutlook({
+    forecast,
+    weekly,
+    weeklyStatus: weeklyLoading ? "loading" : "unavailable",
+  });
+  const {
+    history,
+    dailyLine,
+    points,
+    weeklyPoints,
+    asOf: today,
+    from,
+  } = outlook;
+  const all = [...history, ...dailyLine, ...weeklyPoints];
+  if (!all.length) return <p className="chart-empty">{outlook.weeklyNote}</p>;
+  const to = all.reduce((last, p) => (p.date > last ? p.date : last), today);
+  const values = [
+    ...history.map((p) => p.pricePence),
+    ...dailyLine.flatMap((p) => [p.lowPence, p.highPence]),
+    ...weeklyPoints.flatMap((p) => [p.lowPence, p.highPence]),
+  ];
+  const low = Math.floor((Math.min(...values) - 1) / 2) * 2;
+  const high = Math.ceil((Math.max(...values) + 1) / 2) * 2;
   const x = (date: string) =>
-      left +
-      ((Date.parse(date) - Date.parse(from)) /
-        (Date.parse(to) - Date.parse(from))) *
-        (W - left - right),
-    y = (price: number) =>
-      top + ((high - price) / (high - low)) * (H - top - bottom);
-  const path = (points: { date: string; pricePence: number }[]) =>
-    points
+    left +
+    ((Date.parse(date) - Date.parse(from)) /
+      Math.max(1, Date.parse(to) - Date.parse(from))) *
+      (W - left - right);
+  const y = (price: number) =>
+    top + ((high - price) / (high - low)) * (H - top - bottom);
+  const path = (ps: { date: string; pricePence: number }[]) =>
+    ps
       .map((p, i) => `${i ? "L" : "M"}${x(p.date)},${y(p.pricePence)}`)
       .join(" ");
-  const selected = future.find((p) => p.date === active),
-    delta = selected ? selected.pricePence - forecast.currentPricePence : 0;
+  const selected = points.find((p) => p.date === active);
+  const tickDates = [
+    ...new Set([from, addDays(today, -7), today, outlook.cutoff, to]),
+  ].filter((d) => d <= to);
+  const hitWidth = Math.min(32, x(addDays(today, 1)) - x(today));
   return (
     <>
       <div className="chart-readout">
         <span>GBP pence per litre</span>
-        <span>Hover, tap or tab to a forecast day</span>
+        <span>Hover, tap or tab to a prediction</span>
       </div>
       <div className="chart-interactive">
         <svg
           className="price-chart"
           viewBox={`0 0 ${W} ${H}`}
           role="group"
-          aria-label="UK petrol prices: past 14 days and next 14 days"
+          aria-label="UK petrol history, seven daily predictions, then available weekly predictions on their observation dates"
           onPointerLeave={(event) => {
             if (event.pointerType === "mouse") setActive(null);
           }}
@@ -89,16 +106,18 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
               </g>
             );
           })}
-          {future.slice(1).map((p, i) => {
-            const a = future[i]!;
+          {dailyLine.slice(1).map((p, i) => {
+            const a = dailyLine[i]!;
             return (
               <path
                 key={p.date}
                 d={`M${x(a.date)},${y(a.highPence)} L${x(p.date)},${y(p.highPence)} L${x(p.date)},${y(p.lowPence)} L${x(a.date)},${y(a.lowPence)} Z`}
-                fill={p.confidence === "medium" ? "#c9dfad" : "#eddeb6"}
-                opacity={
-                  forecast.model === "daily-ridge" && i >= 7 ? 0.25 : 0.6
+                fill={
+                  "confidence" in p && p.confidence === "medium"
+                    ? "#c9dfad"
+                    : "#eddeb6"
                 }
+                opacity={0.6}
               />
             );
           })}
@@ -110,6 +129,26 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
             stroke="#a3af97"
             strokeDasharray="4 4"
           />
+          {outlook.hasHandover && (
+            <g>
+              <line
+                x1={x(outlook.cutoff)}
+                x2={x(outlook.cutoff)}
+                y1={top}
+                y2={H - bottom}
+                stroke="#6c78ab"
+                strokeDasharray="3 4"
+              />
+              <text
+                x={x(outlook.cutoff) - 6}
+                y={14}
+                textAnchor="end"
+                className="chart-label"
+              >
+                DAY 7 · WEEKLY →
+              </text>
+            </g>
+          )}
           {history.length > 1 && (
             <path
               d={path(history)}
@@ -127,30 +166,50 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
               fill="#244d3a"
             >
               <title>
-                {dateLabel(p.date)}:{" "}
-                {p.source === "sample" || forecast.mode === "demo"
-                  ? "sample"
-                  : "actual"}{" "}
+                {dateLabel(p.date)}: {outlook.historyLabel}{" "}
                 {p.pricePence.toFixed(2)}p/L
               </title>
             </circle>
           ))}
-          <path
-            d={path(future)}
-            fill="none"
-            stroke="#6b873f"
-            strokeWidth={2.7}
-            strokeDasharray="5 5"
-          />
-          {[
-            from,
-            new Date(Date.parse(today) - 7 * 86400000)
-              .toISOString()
-              .slice(0, 10),
-            today,
-            future[7]!.date,
-            to,
-          ].map((date) => (
+          {!!dailyLine.length && (
+            <path
+              d={path(dailyLine)}
+              fill="none"
+              stroke="#6b873f"
+              strokeWidth={2.7}
+              strokeDasharray="5 5"
+            />
+          )}
+          {weeklyPoints.map((p) => (
+            <g key={p.date}>
+              <line
+                x1={x(p.date)}
+                x2={x(p.date)}
+                y1={y(p.lowPence)}
+                y2={y(p.highPence)}
+                stroke="#6c78ab"
+                strokeWidth={2}
+              />
+              {[p.lowPence, p.highPence].map((price, i) => (
+                <line
+                  key={i}
+                  x1={x(p.date) - 5}
+                  x2={x(p.date) + 5}
+                  y1={y(price)}
+                  y2={y(price)}
+                  stroke="#6c78ab"
+                  strokeWidth={2}
+                />
+              ))}
+              <circle
+                cx={x(p.date)}
+                cy={y(p.pricePence)}
+                r={4.5}
+                fill="#6c78ab"
+              />
+            </g>
+          ))}
+          {tickDates.map((date) => (
             <text
               key={date}
               x={x(date)}
@@ -159,7 +218,7 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
               className="chart-label"
             >
               {date === today
-                ? forecast.model === "daily-ridge"
+                ? forecast
                   ? "SNAPSHOT"
                   : "TODAY"
                 : dateLabel(date)}
@@ -179,29 +238,28 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
                 cx={x(selected.date)}
                 cy={y(selected.pricePence)}
                 r={5}
-                fill="#244d3a"
+                fill={selected.kind === "weekly" ? "#6c78ab" : "#244d3a"}
                 stroke="white"
                 strokeWidth={2}
               />
             </g>
           )}
-          {future.slice(1).map((p) => (
+          {points.map((p) => (
             <rect
               key={p.date}
-              x={x(p.date) - (W - left - right) / 27 / 2}
+              x={x(p.date) - hitWidth / 2}
               y={top}
-              width={(W - left - right) / 27}
+              width={hitWidth}
               height={H - top - bottom}
               fill="transparent"
               tabIndex={0}
               role="button"
-              aria-label={`Forecast ${dateLabel(p.date)}: ${p.pricePence.toFixed(2)}p per litre, range ${p.lowPence.toFixed(2)} to ${p.highPence.toFixed(2)}`}
+              aria-label={`${p.detailLabel}, forecast ${dateLabel(p.date)}: ${p.pricePence.toFixed(2)}p per litre, range ${p.lowPence.toFixed(2)} to ${p.highPence.toFixed(2)}`}
               aria-describedby={
                 active === p.date ? "forecast-tooltip" : undefined
               }
               onPointerMove={(event) => {
-                if (event.pointerType !== "mouse") return;
-                setActive(p.date);
+                if (event.pointerType === "mouse") setActive(p.date);
               }}
               onPointerLeave={(event) => {
                 if (event.pointerType === "mouse") setActive(null);
@@ -221,9 +279,9 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
         </svg>
         {history.length < 2 && (
           <div className="history-placeholder">
-            {history.length} day collected
+            {history.length} observation collected
             <br />
-            <span>Actual history builds each day</span>
+            <span>Actual history builds over time</span>
           </div>
         )}
         {selected && (
@@ -231,20 +289,22 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
             <div className="tooltip-heading">
               <strong>{dateLabel(selected.date)}</strong>
               <span>
-                {forecast.model === "daily-ridge" &&
-                selected.date > future[7]!.date
-                  ? "Longer-term outlook"
+                {selected.kind === "weekly"
+                  ? "Weekly prediction"
                   : `${selected.confidence ?? "low"} certainty`}
               </span>
             </div>
+            <p>{selected.detailLabel}</p>
             <div className="tooltip-price">
               {selected.pricePence.toFixed(2)}
               <small>p/L</small>
-              <span>
-                {signed(delta)} vs{" "}
-                {forecast.model === "daily-ridge" ? "snapshot" : "today"}
-              </span>
             </div>
+            {selected.referencePrice != null && (
+              <p>
+                {signed(selected.pricePence - selected.referencePrice)} vs{" "}
+                {selected.referenceLabel}
+              </p>
+            )}
             <p>
               Possible range:{" "}
               <b>
@@ -265,17 +325,12 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
                   </strong>
                   <p>{s.detail}</p>
                 </div>
-              )) ?? (
-                <p>
-                  Synthetic example based on falling wholesale costs and slower
-                  retail price cuts.
-                </p>
-              )}
+              )) ?? <p>Signal breakdown unavailable.</p>}
             </div>
             <small>
-              Contributions sum to the change from the observed anchor. They are
-              fitted terms, not causal effects. The range is not a guaranteed
-              probability interval.
+              Contributions are relative to the {selected.referenceLabel}. They
+              are fitted terms, not causal effects. Ranges are not guaranteed
+              probabilities.
             </small>
           </ForecastTooltip>
         )}
@@ -283,41 +338,64 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
       <div className="chart-legend">
         <span>
           <i className="solid-line" />
-          {forecast.mode === "sample"
-            ? "Sample pump history"
-            : forecast.mode === "demo"
-              ? "Demo E10 prices"
-              : "Actual E10 prices"}
+          {outlook.historyLabel}
         </span>
-        <span>
-          <i className="dash-line" />
-          14-day forecast
-        </span>
-        <span>
-          <i className="range-square" />
-          Medium certainty
-        </span>
-        <span>
-          <i className="range-square low" />
-          Low certainty
-        </span>
+        {!!outlook.dailyPoints.length && (
+          <span>
+            <i className="dash-line" />
+            Daily · next 7 days
+          </span>
+        )}
+        {!!weeklyPoints.length && (
+          <span>
+            <i className="weekly-dot" />
+            Weekly · official benchmark
+          </span>
+        )}
+        {!!outlook.dailyPoints.length && (
+          <>
+            <span>
+              <i className="range-square" />
+              Medium certainty
+            </span>
+            <span>
+              <i className="range-square low" />
+              Low certainty
+            </span>
+          </>
+        )}
       </div>
+      {outlook.disagreement && (
+        <div className="outlook-warning" role="status">
+          <strong>The outlooks disagree</strong>
+          <p>{outlook.disagreement.message}</p>
+        </div>
+      )}
+      <p className="outlook-note" role="status">
+        {outlook.weeklyNote}
+      </p>
       <details className="chart-table">
-        <summary>View daily prices and signal breakdowns</summary>
+        <summary>View forecast prices and signal breakdowns</summary>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Benchmark</th>
                 <th>Price</th>
                 <th>Range (p/L)</th>
-                <th>Signals: contribution from today</th>
+                <th>Contributions from each model’s reference</th>
               </tr>
             </thead>
             <tbody>
-              {future.slice(1).map((p) => (
+              {points.map((p) => (
                 <tr key={p.date}>
                   <td>{dateLabel(p.date)}</td>
+                  <td>
+                    {p.kind === "weekly"
+                      ? "Weekly · sales-weighted"
+                      : "Daily · station average"}
+                  </td>
                   <td>{p.pricePence.toFixed(2)}p</td>
                   <td>
                     {p.lowPence.toFixed(2)}–{p.highPence.toFixed(2)}
@@ -328,7 +406,7 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
                         (s) =>
                           `${s.label}: ${s.available ? signed(s.contributionPence) : "unavailable"}`,
                       )
-                      .join(" · ") ?? "Synthetic wholesale scenario"}
+                      .join(" · ") ?? "Unavailable"}
                   </td>
                 </tr>
               ))}
@@ -336,6 +414,10 @@ export function PriceChart({ forecast }: { forecast: Forecast }) {
           </table>
         </div>
       </details>
+      <p className="chart-note">
+        {outlook.benchmarkNote} Shading and bars show empirical or illustrative
+        ranges, not guaranteed probabilities.
+      </p>
     </>
   );
 }
