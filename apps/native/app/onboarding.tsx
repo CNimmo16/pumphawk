@@ -7,7 +7,7 @@ import {
   saveOnboardingMutation,
   updateTrackedStationsMutation,
 } from "@pump-hawk/openapi/react-query";
-import type { Driver } from "@pump-hawk/openapi/types";
+import type { Driver, Station } from "@pump-hawk/openapi/types";
 import { KeyboardController } from "react-native-keyboard-controller";
 import { FadeInDown, ReduceMotion } from "react-native-reanimated";
 import { useDashboard } from "../src/lib/queries";
@@ -58,11 +58,21 @@ export default function Onboarding() {
       </Screen>
     );
   if (!data.signedIn) return <Redirect href="/sign-in" />;
+  if (data.tracked.isError)
+    return (
+      <Screen>
+        <ErrorNote
+          message={errorMessage(data.tracked.error)}
+          retry={() => void data.tracked.refetch()}
+        />
+      </Screen>
+    );
   return (
     <OnboardingForm
+      key={data.session.data?.user.id}
       driver={data.car}
       currentLitres={data.advice?.estimatedCurrentLitres}
-      trackedIds={data.tracked.data?.stations.map((s) => s.id) ?? []}
+      trackedStations={data.tracked.data?.stations ?? []}
       initialStep={
         params.step === "stations" && data.car?.onboardingComplete ? 2 : 0
       }
@@ -72,21 +82,27 @@ export default function Onboarding() {
 function OnboardingForm({
   driver,
   currentLitres,
-  trackedIds,
+  trackedStations,
   initialStep,
 }: {
   driver?: Driver;
   currentLitres?: number;
-  trackedIds: string[];
+  trackedStations: Station[];
   initialStep: number;
 }) {
   const [draft, setDraft] = useState(() => initialDraft(driver, currentLitres));
+  const [savedStations] = useState(trackedStations);
   const [editedCar, setEditedCar] = useState(false);
   const [step, setStep] = useState(initialStep),
     [error, setError] = useState(""),
     [location, setLocation] = useState<Location | null>(null),
-    [selected, setSelected] = useState(trackedIds),
+    [selected, setSelected] = useState(() => savedStations.map((s) => s.id)),
     [ready, setReady] = useState(false);
+  const keepingStations =
+    !!driver?.onboardingComplete &&
+    selected.length > 0 &&
+    selected.length === savedStations.length &&
+    savedStations.every((station) => selected.includes(station.id));
   const cache = useQueryClient();
   const complete = async () => {
     await cache.invalidateQueries();
@@ -118,11 +134,15 @@ function OnboardingForm({
       onChangeText={(value) => change(key, value)}
     />
   );
-  function next() {
+  async function next() {
     setError("");
     void KeyboardController.dismiss();
     try {
       if (stationsOnly) {
+        if (keepingStations) {
+          await complete();
+          return;
+        }
         if (!location || !ready)
           throw new Error("Find a location and choose your stations.");
         stationsSave.mutate({ body: { location, stationIds: selected } });
@@ -131,6 +151,10 @@ function OnboardingForm({
       const driver = parseDriver(draft, step === 0);
       if (step < 2) {
         setStep(step + 1);
+        return;
+      }
+      if (keepingStations) {
+        update.mutate({ body: driver });
         return;
       }
       if (!location || !ready)
@@ -188,10 +212,14 @@ function OnboardingForm({
         <View className="flex-1">
           <Button
             loading={submitting}
-            disabled={step === 2 && !ready}
+            disabled={step === 2 && !ready && !keepingStations}
             onPress={next}
           >
-            {step === 2 ? "Save my regular stops" : "Continue"}
+            {step === 2
+              ? keepingStations
+                ? "Keep my regular stops"
+                : "Save my regular stops"
+              : "Continue"}
           </Button>
         </View>
       </View>
@@ -315,13 +343,8 @@ function OnboardingForm({
         )}
         {step === 2 && (
           <Card>
-            {!location && driver?.onboardingComplete && (
-              <Body className="text-sm">
-                Your existing stations stay saved until you choose a search
-                location and save a new selection.
-              </Body>
-            )}
             <StationPicker
+              savedStations={savedStations}
               location={location}
               selected={selected}
               onLocation={setLocation}

@@ -5,6 +5,7 @@ import * as ExpoLocation from "expo-location";
 import { KeyboardController } from "react-native-keyboard-controller";
 import { useQuery } from "@tanstack/react-query";
 import { getNearbyStationsOptions } from "@pump-hawk/openapi/react-query";
+import type { Station } from "@pump-hawk/openapi/types";
 import {
   stationPriceComparison,
   stationPriceMedian,
@@ -14,12 +15,14 @@ import { errorMessage } from "../lib/api";
 import { Body, Button, ErrorNote, Field, Label, Skeleton } from "./ui";
 import { StationMap, type Location } from "./station-map";
 export function StationPicker({
+  savedStations,
   location,
   selected,
   onLocation,
   onSelected,
   onReady,
 }: {
+  savedStations: Station[];
   location: Location | null;
   selected: string[];
   onLocation: (location: Location) => void;
@@ -167,6 +170,23 @@ export function StationPicker({
   }
   return (
     <View className="gap-4">
+      {!location && savedStations.length > 0 && (
+        <>
+          <Label>Your saved regular stops</Label>
+          <Body>
+            These stops are already selected. Keep them, or search below to
+            choose different stations.
+          </Body>
+          {savedStations.map((station) => (
+            <StationOption
+              key={station.id}
+              station={station}
+              median={stationPriceMedian(savedStations)}
+              selected
+            />
+          ))}
+        </>
+      )}
       <Button variant="outline" loading={busy} onPress={() => void locate()}>
         Use my location
       </Button>
@@ -270,50 +290,18 @@ export function StationPicker({
                   </Button>
                 </View>
               </View>
-              {sortedStations(stations, selected, order).map((s) => {
-                const { band, description } = stationPriceComparison(
-                  s.pricePence,
-                  median,
-                );
-                return (
-                  <View
-                    key={s.id}
-                    className={`rounded-2xl border p-4 gap-3 ${selected.includes(s.id) ? "border-forest bg-paper" : "border-line bg-white"}`}
-                  >
-                    <View className="flex-row gap-3 justify-between">
-                      <View className="flex-1 gap-1">
-                        <Text className="text-base font-semibold text-ink">
-                          {s.name}
-                        </Text>
-                        <Text className="text-xs text-muted">
-                          {s.postcode} · {s.distanceMiles?.toFixed(1)} miles
-                          {s.motorway ? " · Motorway services" : ""}
-                        </Text>
-                      </View>
-                      <View
-                        accessibilityLabel={description}
-                        className={`rounded-xl p-2 self-start ${band === "low" ? "bg-low" : band === "high" ? "bg-high" : band === "typical" ? "bg-typical" : "bg-paper"}`}
-                      >
-                        <Text className="text-lg font-bold text-ink">
-                          {s.pricePence?.toFixed(1) ?? "—"}p
-                        </Text>
-                      </View>
-                    </View>
-                    <Button
-                      variant={selected.includes(s.id) ? "primary" : "outline"}
-                      accessibilityLabel={`${selected.includes(s.id) ? "Deselect" : "Track"} ${s.name}`}
-                      disabled={
-                        !selected.includes(s.id) && selected.length >= 3
-                      }
-                      onPress={() => toggle(s.id)}
-                    >
-                      {selected.includes(s.id)
-                        ? "✓ Selected"
-                        : "Track this station"}
-                    </Button>
-                  </View>
-                );
-              })}
+              {sortedStations(stations, selected, order).map((station) => (
+                <StationOption
+                  key={station.id}
+                  station={station}
+                  median={median}
+                  selected={selected.includes(station.id)}
+                  disabled={
+                    !selected.includes(station.id) && selected.length >= 3
+                  }
+                  onToggle={() => toggle(station.id)}
+                />
+              ))}
             </>
           )}
           {!stations.length && (
@@ -329,6 +317,65 @@ export function StationPicker({
             . Prices may change before you visit.
           </Body>
         </>
+      )}
+    </View>
+  );
+}
+
+function StationOption({
+  station,
+  median,
+  selected,
+  disabled,
+  onToggle,
+}: {
+  station: Station;
+  median: number | null;
+  selected: boolean;
+  disabled?: boolean;
+  onToggle?: () => void;
+}) {
+  const { band, description } = stationPriceComparison(
+    station.pricePence,
+    median,
+  );
+  return (
+    <View
+      className={`rounded-2xl border p-4 gap-3 ${selected ? "border-forest bg-paper" : "border-line bg-white"}`}
+    >
+      <View className="flex-row gap-3 justify-between">
+        <View className="flex-1 gap-1">
+          <Text className="text-base font-semibold text-ink">
+            {station.name}
+          </Text>
+          <Text className="text-xs text-muted">
+            {station.postcode}
+            {station.distanceMiles != null
+              ? ` · ${station.distanceMiles.toFixed(1)} miles`
+              : ""}
+            {station.motorway ? " · Motorway services" : ""}
+          </Text>
+        </View>
+        <View
+          accessibilityLabel={description}
+          className={`rounded-xl p-2 self-start ${band === "low" ? "bg-low" : band === "high" ? "bg-high" : band === "typical" ? "bg-typical" : "bg-paper"}`}
+        >
+          <Text className="text-lg font-bold text-ink">
+            {station.pricePence?.toFixed(1) ?? "—"}p
+          </Text>
+        </View>
+      </View>
+      {onToggle ? (
+        <Button
+          variant={selected ? "primary" : "outline"}
+          accessibilityLabel={`${selected ? "Deselect" : "Track"} ${station.name}`}
+          disabled={disabled}
+          onPress={onToggle}
+        >
+          {selected ? "✓ Selected" : "Track this station"}
+        </Button>
+      ) : (
+        <Text className="text-sm font-semibold text-forest">✓ Selected</Text>
       )}
     </View>
   );
