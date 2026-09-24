@@ -41,7 +41,7 @@ pnpm dlx eas-cli@latest build --profile development --platform android
 pnpm dlx eas-cli@latest build --profile simulator --platform ios
 ```
 
-`eas init` adds the real EAS project ID to this dynamic config; follow its instructions to add `extra.eas.projectId` if it cannot edit the file. These commands are for you to run: no native binary, signing credentials or EAS build was created as part of implementation. For local native compilation, `pnpm exec expo run:ios` / `pnpm exec expo run:android` work from this directory with Xcode/Android tooling installed. Generated native directories are ignored.
+The project is already linked to `@cnimmo16/pump-hawk`. Only run `eas init` when linking a different project. For local native compilation, `pnpm exec expo run:ios` / `pnpm exec expo run:android` work from this directory with Xcode/Android tooling installed. Generated native directories are ignored.
 
 After installing your development build:
 
@@ -51,6 +51,18 @@ pnpm dev:native
 ```
 
 Open the QR/development URL in the installed development client. Use a development build, not Expo Go: the app includes custom native keyboard, gesture, map and animation modules. The `pumphawk` scheme is configured in `app.config.ts`; changing it requires a new native build and corresponding server/client auth changes.
+
+## Install directly on an Android device
+
+The `preview` profile builds a signed, standalone APK using the live Pump Hawk API and EAS's `production` environment. It does not require Google Play, Expo Go or a running Metro server. Run from `apps/native`:
+
+```sh
+EXPO_NO_DOTENV=1 pnpm dlx eas-cli@24.7.0 build --platform android --profile preview
+```
+
+Open the completed build's Expo install link on the Android device, download the APK and install it. If Android asks, allow installation from the browser used for this download. EAS manages the signing key and increments the version code so later preview builds can update the installed app.
+
+Without `GOOGLE_MAPS_ANDROID_API_KEY`, station selection uses the existing list and postcode/location search; the native Android map stays unavailable. Configure the key in Expo's `production` environment and add the EAS signing certificate SHA-1 to its Android restrictions before building a version with maps.
 
 ## Google Play release
 

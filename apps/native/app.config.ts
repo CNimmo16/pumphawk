@@ -22,7 +22,9 @@ const config: ExpoConfig = {
       "android.permission.READ_EXTERNAL_STORAGE",
       "android.permission.WRITE_EXTERNAL_STORAGE",
       "android.permission.ACCESS_BACKGROUND_LOCATION",
-      ...(process.env.EAS_BUILD_PROFILE === "production"
+      ...(["production", "preview"].includes(
+        process.env.EAS_BUILD_PROFILE ?? "",
+      )
         ? ["android.permission.SYSTEM_ALERT_WINDOW"]
         : []),
     ],
