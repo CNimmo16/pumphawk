@@ -64,6 +64,26 @@ Open the completed build's Expo install link on the Android device, download the
 
 Without `GOOGLE_MAPS_ANDROID_API_KEY`, station selection uses the existing list and postcode/location search; the native Android map stays unavailable. Configure the key in Expo's `production` environment and add the EAS signing certificate SHA-1 to its Android restrictions before building a version with maps.
 
+## Over-the-air updates
+
+EAS Update delivers JavaScript, styling and asset changes to installed release builds. Install a new APK containing `expo-updates` once; the earlier APK without this library cannot receive updates.
+
+- Direct-install APKs subscribe to the **preview** channel; Play builds subscribe to **production**. Both use the EAS **production environment**, including `EXPO_PUBLIC_API_URL` and `GOOGLE_MAPS_ANDROID_API_KEY`. Channels control the audience; environments supply configuration.
+- Set `EXPO_PUBLIC_API_URL=https://pump-hawk-web.filodesign.workers.dev` as a plain-text project variable and `GOOGLE_MAPS_ANDROID_API_KEY` as Sensitive in that environment. Build-profile `env` entries alone do not supply values to `eas update`.
+- The **fingerprint** runtime policy ties updates to compatible native code and configuration. Native dependency, permissions, Maps key or SDK changes require a new build; ordinary screen and logic changes can use an update. Keep the same environment when building and publishing.
+- Release builds check for updates on launch, load the installed/cached version immediately, and download a compatible update in the background. Close and reopen after the download to apply it. Updates do not interrupt onboarding or other work in progress. The embedded version remains available offline.
+- Publishing is an explicit operation. The GitHub web/API deployment does not publish native updates automatically.
+
+Publish an Android update from the repository root after validating the change:
+
+```sh
+pnpm --filter @pump-hawk/native update:preview --platform android --message "Describe the fix"
+# After verifying it on the internal APK, publish to compatible Play builds:
+pnpm --filter @pump-hawk/native update:production --platform android --message "Describe the release"
+```
+
+These scripts use the EAS production environment and disable local `.env` loading so a local backend setting cannot accidentally enter an update. Incompatible fingerprints are not delivered to older builds; build and install a new APK when the native runtime changes. After publishing, force close and reopen the app up to twice to download and then apply the update. Development clients using Metro continue to use normal reload/Fast Refresh.
+
 ## Google Play release
 
 See [PLAY_STORE.md](PLAY_STORE.md) for the signed Android App Bundle build, maps key and signing-certificate setup, internal-test upload, and outstanding public-launch requirements. The `production` build uses the deployed API and remote version numbering; the `internal` submission profile uploads a draft. Web/API deployments do not automatically publish native releases.
@@ -120,4 +140,4 @@ pnpm build
 
 ## Implementation references
 
-[Expo SDK compatibility](https://docs.expo.dev/versions/latest/), [Better Auth Expo integration](https://better-auth.com/docs/integrations/expo), [Uniwind setup](https://docs.uniwind.dev/quickstart), [Keyboard Controller](https://docs.expo.dev/guides/keyboard-handling/), [native maps configuration](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/).
+[Expo SDK compatibility](https://docs.expo.dev/versions/latest/), [EAS Update](https://docs.expo.dev/eas-update/getting-started/), [runtime compatibility](https://docs.expo.dev/eas-update/runtime-versions/), [Better Auth Expo integration](https://better-auth.com/docs/integrations/expo), [Uniwind setup](https://docs.uniwind.dev/quickstart), [Keyboard Controller](https://docs.expo.dev/guides/keyboard-handling/), [native maps configuration](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/).

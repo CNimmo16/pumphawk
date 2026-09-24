@@ -9,6 +9,12 @@ const config: ExpoConfig = {
   orientation: "portrait",
   platforms: ["ios", "android"],
   userInterfaceStyle: "light",
+  runtimeVersion: { policy: "fingerprint" },
+  updates: {
+    url: "https://u.expo.dev/b4352b09-1b05-4ca8-8089-0a6167b334c8",
+    checkAutomatically: "ON_LOAD",
+    fallbackToCacheTimeout: 0,
+  },
   ios: {
     bundleIdentifier: "uk.pumphawk.app",
     supportsTablet: true,
@@ -22,7 +28,9 @@ const config: ExpoConfig = {
       "android.permission.READ_EXTERNAL_STORAGE",
       "android.permission.WRITE_EXTERNAL_STORAGE",
       "android.permission.ACCESS_BACKGROUND_LOCATION",
-      ...(["production", "preview"].includes(
+      // EAS Update has no build profile. Default to the same native settings
+      // as release builds so fingerprint-based updates remain compatible.
+      ...(!["development", "simulator"].includes(
         process.env.EAS_BUILD_PROFILE ?? "",
       )
         ? ["android.permission.SYSTEM_ALERT_WINDOW"]

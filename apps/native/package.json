@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit",
     "check:dependencies": "expo install --check",
     "export:check": "expo export --platform ios --platform android --output-dir dist",
+    "update:preview": "EXPO_NO_DOTENV=1 pnpm dlx eas-cli@24.7.0 update --channel preview --environment production",
+    "update:production": "EXPO_NO_DOTENV=1 pnpm dlx eas-cli@24.7.0 update --channel production --environment production",
     "test": "vitest run"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

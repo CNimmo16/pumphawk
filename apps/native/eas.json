@@ -5,10 +5,12 @@
     "simulator": { "extends": "development", "ios": { "simulator": true } },
     "preview": {
       "extends": "production",
+      "channel": "preview",
       "distribution": "internal",
       "android": { "buildType": "apk" }
     },
     "production": {
+      "channel": "production",
       "distribution": "store",
       "environment": "production",
       "node": "24.15.0",
