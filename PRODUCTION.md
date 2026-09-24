@@ -46,17 +46,17 @@ No database migration is required: Better Auth's existing account/session tables
 
 Phone sign-up/sign-in uses **Twilio Verify**, alongside Google, in both web and native. In the [Twilio Console](https://console.twilio.com/), create a Verify service named **Pump Hawk**, enable SMS and set its **code length to 6**. Enable United Kingdom SMS traffic in [Verify Geo Permissions](https://www.twilio.com/docs/verify/preventing-toll-fraud/verify-geo-permissions); keeping Fraud Guard enabled is recommended. The app accepts UK mobile numbers only. [Verify service settings](https://www.twilio.com/docs/verify/api/service).
 
-Add all three as **secrets** in GitHub's **production** environment:
+Add these to GitHub's **production** environment:
 
-| Secret                      | Value                                                         |
-| --------------------------- | ------------------------------------------------------------- |
-| `TWILIO_ACCOUNT_SID`        | Account SID (`AC…`) from the Twilio Console account dashboard |
-| `TWILIO_AUTH_TOKEN`         | Auth Token for that same Twilio account                       |
-| `TWILIO_VERIFY_SERVICE_SID` | The Verify service SID (`VA…`), not a Messaging Service SID   |
+| Name                        | GitHub storage | Value                                                         |
+| --------------------------- | -------------- | ------------------------------------------------------------- |
+| `TWILIO_ACCOUNT_SID`        | Variable       | Account SID (`AC…`) from the Twilio Console account dashboard |
+| `TWILIO_AUTH_TOKEN`         | Secret         | Auth Token for that same Twilio account                       |
+| `TWILIO_VERIFY_SERVICE_SID` | Variable       | The Verify service SID (`VA…`), not a Messaging Service SID   |
 
 Use live account credentials. Trial accounts require the destination number to be verified with Twilio. No sender phone number or Messaging Service SID is needed for this Verify integration. These credentials stay on the API Worker; do not use `VITE_` or `EXPO_PUBLIC_` prefixes. For local testing, add the same names to `services/api/.dev.vars` and restart the API.
 
-After adding the secrets, deploy `main` (or rerun the deployment workflow). Changing GitHub secrets alone does not update an already-deployed Worker. `GET /api/v1/auth/providers` should then report `phone: true`. Phone endpoints return 404 and clients hide the option when any credential is missing. Removing a credential and deploying deletes that Worker secret and disables phone sign-in again.
+After adding the variables and secret, deploy `main` (or rerun the deployment workflow). Changing GitHub configuration alone does not update an already-deployed Worker. The deployment reads the SIDs from GitHub variables and the token from GitHub secrets, then uploads all three as private API Worker bindings. `GET /api/v1/auth/providers` should then report `phone: true`. Phone endpoints return 404 and clients hide the option when any credential is missing. Removing a value and deploying deletes that Worker binding and disables phone sign-in again.
 
 Twilio creates and checks the SMS code. Better Auth creates the verified phone identity and normal session only after approval; repeated sign-ins find the same phone identity. The app limits each number to three sends and ten checks per ten minutes, plus IP limits. First-time phone sign-up does not subscribe users to fuel alerts or automatically link an existing Google account. Existing phone users can sign in using their stored number. No database migration is required. Fuel alert delivery remains the separate SMS stub.
 

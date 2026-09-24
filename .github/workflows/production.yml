@@ -129,9 +129,9 @@ jobs:
           FUEL_FINDER_CLIENT_ID: ${{ secrets.FUEL_FINDER_CLIENT_ID }}
           FUEL_FINDER_CLIENT_SECRET: ${{ secrets.FUEL_FINDER_CLIENT_SECRET }}
           ONE_AUTO_API_KEY: ${{ secrets.ONE_AUTO_API_KEY }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_ACCOUNT_SID: ${{ vars.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_VERIFY_SERVICE_SID: ${{ secrets.TWILIO_VERIFY_SERVICE_SID }}
+          TWILIO_VERIFY_SERVICE_SID: ${{ vars.TWILIO_VERIFY_SERVICE_SID }}
       - name: Deploy web Worker
         run: pnpm --filter @pump-hawk/web exec wrangler deploy --no-bundle
       - name: Verify deployed application
