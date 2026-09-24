@@ -25,6 +25,17 @@ minimumReleaseAgeExclude:
   - miniflare@5.20260915.0-alpha
   - workerd@1.20260915.1
   - wrangler@4.132.0
+  - "@expo/cli@57.0.27"
+  - "@expo/router-server@57.0.11"
+  - babel-preset-expo@57.0.13
+  - expo-modules-core@57.0.19
+  - expo-modules-jsi@57.1.1
+  - expo@57.0.25
+  - "@expo/ui@57.0.20"
+  - expo-glass-effect@57.0.4
+  - expo-linking@57.0.11
+  - expo-location@57.0.20
+  - expo-router@57.0.23
 
 verifyDepsBeforeRun: false
 
