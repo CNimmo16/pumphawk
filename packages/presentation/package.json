@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./phone-auth": "./src/phone-auth.ts",
     "./national-outlook": "./src/national-outlook.ts",
     "./station-prices": "./src/station-prices.ts"
   },

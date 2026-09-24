@@ -223,7 +223,7 @@ describe.sequential(
         404,
       );
     });
-    it("removes phone sign-in and OTP routes", async () => {
+    it("disables phone sign-in and OTP routes without Twilio credentials", async () => {
       for (const path of [
         "/api/auth/phone-number/send-otp",
         "/api/auth/phone-number/verify",
@@ -243,6 +243,372 @@ describe.sequential(
       expect(
         await db.query.smsMessage.findMany({ where: { kind: "otp" } }),
       ).toEqual([]);
+    });
+    describe("optional Twilio phone authentication", () => {
+      const twilio = {
+        twilioAccountSid: "AC" + "0".repeat(32),
+        twilioAuthToken: "test-twilio-token",
+        twilioVerifyServiceSid: "VA" + "0".repeat(32),
+      };
+      const phoneNumber = "+447400123456";
+      let ip = 50;
+      const phoneRequest = (
+        target: ReturnType<typeof createApp>,
+        action: string,
+        body: object,
+        native = false,
+      ) =>
+        target.request(
+          `http://localhost:3100/api/auth/phone-number/${action}`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "cf-connecting-ip": `127.0.1.${ip++}`,
+              ...(native
+                ? { "expo-origin": "pumphawk://" }
+                : { origin: config.appOrigin }),
+            },
+            body: JSON.stringify(body),
+          },
+        );
+      const reply = (phone: string, status = "pending") =>
+        Response.json({
+          status,
+          to: phone,
+          service_sid: twilio.twilioVerifyServiceSid,
+          channel: "sms",
+        });
+
+      it("advertises flags only and requires every credential, also in production", async () => {
+        for (const missing of Object.keys(twilio)) {
+          const target = createApp({
+            config: {
+              ...config,
+              environment: "production",
+              ...twilio,
+              [missing]: undefined,
+            },
+          });
+          const response = await target.request(
+            "http://localhost:3100/api/v1/auth/providers",
+          );
+          expect(response.headers.get("cache-control")).toBe("no-store");
+          expect(await response.json()).toEqual({
+            google: true,
+            phone: false,
+            localEmail: false,
+          });
+          expect(
+            (await phoneRequest(target, "send-otp", { phoneNumber })).status,
+          ).toBe(404);
+          expect(
+            (
+              await phoneRequest(target, "verify", {
+                phoneNumber,
+                code: "123456",
+              })
+            ).status,
+          ).toBe(404);
+        }
+        const target = createApp({
+          config: { ...config, environment: "production", ...twilio },
+        });
+        expect(
+          await (
+            await target.request("http://localhost:3100/api/v1/auth/providers")
+          ).json(),
+        ).toEqual({ google: true, phone: true, localEmail: false });
+      });
+
+      it("creates an account only after Twilio approval and restores the same identity on native", async () => {
+        let approved = false;
+        const http = vi.fn<typeof fetch>(async (input, init) => {
+          const url = new URL(String(input));
+          expect(url.origin).toBe("https://verify.twilio.com");
+          expect(init?.method).toBe("POST");
+          expect(init?.redirect).toBe("manual");
+          expect(new Headers(init?.headers).get("authorization")).toBe(
+            `Basic ${btoa(`${twilio.twilioAccountSid}:${twilio.twilioAuthToken}`)}`,
+          );
+          const body = new URLSearchParams(String(init?.body));
+          expect(body.get("To")).toBe(phoneNumber);
+          if (url.pathname.endsWith("/Verifications")) {
+            expect([...body.entries()]).toEqual([
+              ["To", phoneNumber],
+              ["Channel", "sms"],
+            ]);
+            approved = false;
+            return reply(phoneNumber);
+          }
+          expect(url.pathname).toBe(
+            `/v2/Services/${twilio.twilioVerifyServiceSid}/VerificationCheck`,
+          );
+          if (approved) return Response.json({ code: 20404 }, { status: 404 });
+          approved = body.get("Code") === "123456";
+          return reply(phoneNumber, approved ? "approved" : "pending");
+        });
+        const target = createApp({
+          config: { ...config, ...twilio },
+          httpClient: http,
+        });
+        const send = await phoneRequest(target, "send-otp", { phoneNumber });
+        expect(send.status, await send.clone().text()).toBe(200);
+        expect(
+          await db.query.user.findFirst({ where: { phoneNumber } }),
+        ).toBeUndefined();
+        const wrong = await phoneRequest(target, "verify", {
+          phoneNumber,
+          code: "000000",
+        });
+        expect(wrong.status).toBe(400);
+        expect(cookies(wrong)).not.toContain("session_token");
+        expect(
+          await db.query.user.findFirst({ where: { phoneNumber } }),
+        ).toBeUndefined();
+        const verify = await phoneRequest(target, "verify", {
+          phoneNumber,
+          code: "123456",
+        });
+        expect(verify.status, await verify.clone().text()).toBe(200);
+        expect(cookies(verify)).toContain("session_token");
+        const saved = await db.query.user.findFirst({ where: { phoneNumber } });
+        expect(saved?.phoneNumberVerified).toBe(true);
+        expect(saved?.email).toMatch(/@phone\.pumphawk\.invalid$/);
+        expect(
+          await db.query.driver.findFirst({ where: { userId: saved!.id } }),
+        ).toBeUndefined();
+        const replay = await phoneRequest(target, "verify", {
+          phoneNumber,
+          code: "123456",
+        });
+        expect(replay.status).toBe(400);
+        expect(cookies(replay)).not.toContain("session_token");
+
+        expect(
+          (await phoneRequest(target, "send-otp", { phoneNumber }, true))
+            .status,
+        ).toBe(200);
+        const native = await phoneRequest(
+          target,
+          "verify",
+          { phoneNumber, code: "123456" },
+          true,
+        );
+        expect(native.status, await native.clone().text()).toBe(200);
+        const session = await target.request(
+          "http://localhost:3100/api/auth/get-session",
+          {
+            headers: { cookie: cookies(native), "expo-origin": "pumphawk://" },
+          },
+        );
+        expect(
+          ((await session.json()) as { user: { id: string } }).user.id,
+        ).toBe(saved!.id);
+        expect(
+          await db.query.user.findMany({ where: { phoneNumber } }),
+        ).toHaveLength(1);
+        expect(
+          await db.query.smsMessage.findMany({ where: { kind: "otp" } }),
+        ).toEqual([]);
+      });
+
+      it("rejects malformed requests, foreign numbers, non-mobile numbers, identity-linking fields and untrusted origins before sending", async () => {
+        const http = vi.fn<typeof fetch>();
+        const target = createApp({
+          config: { ...config, ...twilio },
+          httpClient: http,
+        });
+        for (const number of [
+          "07400123456",
+          "+14155552671",
+          "+442079460000",
+          "+447000123456",
+        ])
+          expect(
+            (await phoneRequest(target, "send-otp", { phoneNumber: number }))
+              .status,
+          ).toBe(400);
+        for (const body of [
+          { phoneNumber, code: "12345" },
+          { phoneNumber, code: "123456", updatePhoneNumber: true },
+          { phoneNumber, code: "123456", disableSession: true },
+          { phoneNumber, code: "123456", email: "somebody@example.test" },
+        ])
+          expect((await phoneRequest(target, "verify", body)).status).toBe(400);
+        const malformed = await target.request(
+          "http://localhost:3100/api/auth/phone-number/send-otp",
+          {
+            method: "POST",
+            headers,
+            body: "{",
+          },
+        );
+        expect(malformed.status).toBe(400);
+        const rejected = await target.request(
+          "http://localhost:3100/api/auth/phone-number/send-otp",
+          {
+            method: "POST",
+            headers: {
+              ...headers,
+              origin: "https://evil.example",
+              "cf-connecting-ip": "127.0.2.1",
+            },
+            body: JSON.stringify({ phoneNumber }),
+          },
+        );
+        expect(rejected.status).toBe(403);
+        const spoofed = await target.request(
+          "http://localhost:3100/api/auth/phone-number/send-otp",
+          {
+            method: "POST",
+            headers: {
+              ...headers,
+              origin: "https://evil.example",
+              "expo-origin": "pumphawk://",
+            },
+            body: JSON.stringify({ phoneNumber }),
+          },
+        );
+        expect(spoofed.status).toBe(403);
+        for (const route of [
+          "/api/auth/sign-in/phone-number",
+          "/api/auth/phone-number/request-password-reset",
+          "/api/auth/phone-number/reset-password",
+        ])
+          expect(
+            (
+              await target.request(`http://localhost:3100${route}`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ phoneNumber }),
+              })
+            ).status,
+          ).toBe(404);
+        expect(http).not.toHaveBeenCalled();
+      });
+
+      it("limits sends from a single IP across different mobile numbers", async () => {
+        const http = vi.fn<typeof fetch>(async (_input, init) =>
+          reply(new URLSearchParams(String(init?.body)).get("To")!),
+        );
+        const target = createApp({
+          config: { ...config, ...twilio },
+          httpClient: http,
+        });
+        for (let i = 0; i < 4; i++) {
+          const response = await target.request(
+            "http://localhost:3100/api/auth/phone-number/send-otp",
+            {
+              method: "POST",
+              headers: { ...headers, "cf-connecting-ip": "127.0.2.2" },
+              body: JSON.stringify({ phoneNumber: `+44740012346${i}` }),
+            },
+          );
+          expect(response.status, await response.clone().text()).toBe(
+            i < 3 ? 200 : 429,
+          );
+        }
+        expect(http).toHaveBeenCalledTimes(3);
+      });
+
+      it("enforces per-number send and verification limits across changing IP addresses, resetting after ten minutes", async () => {
+        const phoneNumber = "+447400123457";
+        let clock = now;
+        const http = vi.fn<typeof fetch>(async () => reply(phoneNumber));
+        const target = createApp({
+          config: { ...config, ...twilio },
+          httpClient: http,
+          clock: () => clock,
+        });
+        for (let i = 0; i < 3; i++)
+          expect(
+            (await phoneRequest(target, "send-otp", { phoneNumber })).status,
+          ).toBe(200);
+        expect(
+          (await phoneRequest(target, "send-otp", { phoneNumber })).status,
+        ).toBe(429);
+        expect(http).toHaveBeenCalledTimes(3);
+        for (let i = 0; i < 10; i++)
+          expect(
+            (
+              await phoneRequest(target, "verify", {
+                phoneNumber,
+                code: "000000",
+              })
+            ).status,
+          ).toBe(400);
+        expect(
+          (
+            await phoneRequest(target, "verify", {
+              phoneNumber,
+              code: "000000",
+            })
+          ).status,
+        ).toBe(429);
+        expect(http).toHaveBeenCalledTimes(13);
+        clock = new Date(now.getTime() + 600_000);
+        expect(
+          (await phoneRequest(target, "send-otp", { phoneNumber })).status,
+        ).toBe(200);
+      });
+
+      it("maps expired codes and provider failures without disclosing upstream details", async () => {
+        const phoneNumber = "+447400123458";
+        let upstreamStatus = 404;
+        const http = vi.fn<typeof fetch>(async () =>
+          Response.json(
+            { code: 20404, message: "provider-secret-test-twilio-token" },
+            { status: upstreamStatus },
+          ),
+        );
+        const target = createApp({
+          config: { ...config, ...twilio },
+          httpClient: http,
+        });
+        for (const [status, expected] of [
+          [404, 400],
+          [429, 429],
+          [401, 503],
+          [500, 503],
+        ] as const) {
+          upstreamStatus = status;
+          const response = await phoneRequest(target, "verify", {
+            phoneNumber,
+            code: "123456",
+          });
+          expect(response.status, await response.clone().text()).toBe(expected);
+          const body = await response.text();
+          expect(body).not.toContain("provider-secret");
+          expect(body).not.toContain("test-twilio-token");
+          expect(cookies(response)).not.toContain("session_token");
+        }
+        http.mockImplementationOnce(async () => {
+          throw new Error("Network failure with sensitive provider details");
+        });
+        expect(
+          (
+            await phoneRequest(target, "verify", {
+              phoneNumber,
+              code: "123456",
+            })
+          ).status,
+        ).toBe(503);
+        http.mockImplementationOnce(async () =>
+          reply("+447400123459", "approved"),
+        );
+        expect(
+          (
+            await phoneRequest(target, "verify", {
+              phoneNumber,
+              code: "123456",
+            })
+          ).status,
+        ).toBe(503);
+        expect(
+          await db.query.user.findFirst({ where: { phoneNumber } }),
+        ).toBeUndefined();
+      });
     });
     it("creates local email accounts and issues normal sessions, while rejecting bad passwords and origins", async () => {
       const localApp = createApp({

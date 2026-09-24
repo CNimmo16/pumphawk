@@ -23,6 +23,9 @@ import {
   VehicleLookupInput,
   VehicleLookupSchema,
   VehicleLookupAvailabilitySchema,
+  AuthProvidersSchema,
+  PhoneOtpSendSchema,
+  PhoneOtpVerifySchema,
 } from "@pump-hawk/contracts";
 import { readConfig, type Config } from "./config";
 import { buildInjector, type AppInjector } from "./injector";
@@ -32,6 +35,7 @@ import { demoObservations, forecastPrices } from "../pricing/forecast";
 import type { MiddlewareHandler } from "hono";
 import type { HttpClient } from "../data/http";
 import { localEmailAuthEnabled } from "../lib/auth/auth.service";
+import { phoneAuthEnabled } from "../lib/auth/phone";
 export type AppEnv = {
   Bindings: Env;
   Variables: { injector: AppInjector; userId: string };
@@ -84,7 +88,7 @@ export const openApiDocument = {
     title: "Pump Hawk API",
     version: "0.1.0",
     description:
-      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
+      "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS alerts use a persisted stub; optional phone authentication uses Twilio Verify.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. GET /api/v1/auth/providers returns available sign-in methods. With Twilio configured, POST /api/auth/phone-number/send-otp then /api/auth/phone-number/verify to sign in or create an account with a UK mobile. Phone verification does not opt users into SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret.",
   },
   servers: [{ url: "/" }],
   tags: [
@@ -96,7 +100,11 @@ export const openApiDocument = {
       name: "Driver",
       description: "Your car, estimated tank state, and fill-up advice",
     },
-    { name: "Auth", description: "Google signup/login via Better Auth" },
+    {
+      name: "Auth",
+      description:
+        "Google and optional Twilio phone signup/login via Better Auth",
+    },
     { name: "Alerts", description: "Opt-in alerts and persisted SMS stub" },
     { name: "System", description: "Operational status and development tools" },
   ],
@@ -761,6 +769,109 @@ export function createApp(
     },
   );
   const authError = z.object({ code: z.string(), message: z.string() });
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/api/v1/auth/providers",
+      operationId: "getAuthProviders",
+      tags: ["Auth"],
+      summary: "Discover sign-in methods enabled on this server",
+      responses: {
+        200: json(
+          AuthProvidersSchema,
+          "Availability flags only; never credentials",
+        ),
+      },
+    }),
+    (c) => {
+      const config = c.get("injector").resolve("config");
+      c.header("Cache-Control", "no-store");
+      return c.json(
+        {
+          google: Boolean(config.googleClientId && config.googleClientSecret),
+          phone: phoneAuthEnabled(config),
+          localEmail: localEmailAuthEnabled(config),
+        },
+        200,
+      );
+    },
+  );
+  for (const action of ["send-otp", "verify"] as const) {
+    const path = `/api/auth/phone-number/${action}` as const;
+    const schema =
+      action === "send-otp" ? PhoneOtpSendSchema : PhoneOtpVerifySchema;
+    app.openAPIRegistry.registerPath({
+      method: "post",
+      path,
+      operationId: action === "send-otp" ? "sendPhoneOtp" : "verifyPhoneOtp",
+      tags: ["Auth"],
+      summary:
+        action === "send-otp"
+          ? "Send a sign-in code to a UK mobile"
+          : "Verify an SMS code and sign in or create an account",
+      description:
+        "Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.",
+      request: {
+        body: { required: true, content: { "application/json": { schema } } },
+      },
+      responses: {
+        200: json(
+          action === "send-otp"
+            ? z.object({ message: z.string() })
+            : z.object({
+                status: z.literal(true),
+                token: z.string(),
+                user: z.unknown(),
+              }),
+          action === "send-otp"
+            ? "SMS verification started"
+            : "Verified user and session; sets session cookie",
+        ),
+        400: json(
+          authError,
+          "Invalid phone number, malformed or incorrect/expired code",
+        ),
+        403: json(authError, "Untrusted origin"),
+        404: errors[404],
+        429: json(authError, "Too many attempts"),
+        503: json(authError, "Phone sign-in temporarily unavailable"),
+      },
+    });
+    app.post(path, async (c) => {
+      const config = c.get("injector").resolve("config");
+      if (!phoneAuthEnabled(config)) return c.notFound();
+      // First-time OTP requests have no cookie, so validate their origin explicitly.
+      // An Expo header cannot override an untrusted browser Origin.
+      const origin = c.req.header("origin") ?? c.req.header("expo-origin");
+      if (origin !== config.appOrigin && origin !== "pumphawk://")
+        return c.json(
+          {
+            code: "INVALID_ORIGIN",
+            message: "Use the configured app to sign in.",
+          },
+          403,
+        );
+      // Validate a clone so Better Auth can still parse the original body.
+      if (
+        !schema.safeParse(
+          await c.req.raw
+            .clone()
+            .json()
+            .catch(() => null),
+        ).success
+      )
+        return c.json(
+          {
+            code: "INVALID_PHONE_REQUEST",
+            message:
+              "Enter a UK mobile number in +44 format and a six-digit code when verifying.",
+          },
+          400,
+        );
+      c.header("Cache-Control", "no-store");
+      return c.get("injector").resolve("authService").auth.handler(c.req.raw);
+    });
+  }
   app.openapi(
     createRoute({
       method: "get",

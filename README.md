@@ -2,7 +2,7 @@
 
 Registration-based car setup is optional: see [VEHICLE_LOOKUP.md](./VEHICLE_LOOKUP.md) for provider setup and `ONE_AUTO_API_KEY`. Selected stations stay at the top of the onboarding list under both distance and price sorting.
 
-A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth Google login, typed-inject services and a generated Hey API/TanStack Query client.
+A UK E10 petrol planner: Hono REST API and TanStack Start on Cloudflare Workers, PostgreSQL, Drizzle Relations v2, Better Auth Google and optional Twilio phone login, typed-inject services and a generated Hey API/TanStack Query client.
 
 **Implemented:** daily Databento B7H/Brent settlement ingestion, hourly government Fuel Finder prices, a combined outlook with seven daily predictions and later weekly observations, including signal breakdowns, car/weekday-mileage onboarding, a map of stations within five miles, up to three tracked stations, and tank updates. SMS notifications still use a stub. Production deployment is configured through [GitHub Actions](.github/workflows/production.yml); see [deployment setup](PRODUCTION.md).
 
@@ -108,14 +108,14 @@ Fuel planning uses the actual weekday schedule, imperial MPG and the last gauge 
 Follows the service/package conventions in `~/Documents/waxly/monorepo`:
 
 ```text
-apps/web/src/components/   Google login, three-step onboarding, Leaflet map, SVG charts
+apps/web/src/components/   Google/phone login, three-step onboarding, Leaflet map, SVG charts
 services/api/src/
   app/                     Hono/OpenAPI routes, config and typed-inject composition
   data/                    Databento, FX, Fuel Finder, job ingestion and station services
   pricing/                 Pure forecast/recommendation policies and stored-data queries
   drivers/                 Car, mileage and tank settings
   alerts/                  Legacy manual alert evaluation
-  lib/auth/                Better Auth Google signup/login
+  lib/auth/                Better Auth Google/phone signup/login, Twilio Verify
   lib/db/                  PostgreSQL schema, Drizzle v2 relations and connections
   lib/sms/                 Persisted no-network SMS stub
 services/api/drizzle/      Generated migrations and snapshots
@@ -135,31 +135,38 @@ pnpm openapi
 
 Do not hand-edit generated clients. Frontend queries/mutations consume `@pump-hawk/openapi/react-query`.
 
-| Method   | Endpoint                                              | Access                     | Purpose                                                         |
-| -------- | ----------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
-| GET      | `/api/health`, `/api/docs`, `/api/openapi.json`       | Public                     | Health and documentation                                        |
-| POST     | `/api/auth/sign-in/social`                            | Rate limited               | Start Google signup/login                                       |
-| POST     | `/api/auth/sign-up/email`, `/api/auth/sign-in/email`  | Development server only    | Local email/password accounts; 404 in production                |
-| GET/POST | `/api/auth/get-session`, `/sign-out`                  | Cookie                     | Session/logout                                                  |
-| GET      | `/api/v1/forecast`                                    | Public                     | Actual history and next 14 days, bounds and signals             |
-| GET      | `/api/v1/demo`                                        | Public                     | Explicitly synthetic example                                    |
-| GET/PUT  | `/api/v1/me/driver`                                   | Session cookie             | Car and mileage; PUT confirms a fresh gauge reading             |
-| PUT      | `/api/v1/me/onboarding`                               | Session cookie             | Save car, driving and selected nearby stations atomically       |
-| PATCH    | `/api/v1/me/tank`                                     | Session cookie             | Update current litres only                                      |
-| GET      | `/api/v1/me/stations/nearby?latitude=…&longitude=…`   | Session cookie             | Available E10 stations within five miles                        |
-| GET      | `/api/v1/me/stations`                                 | Session cookie             | Selected stations and up to 30 days of price observations       |
-| GET      | `/api/v1/me/dashboard`, `/api/v1/me/recommendation`   | Session cookie             | Personal buying plan                                            |
-| POST     | `/api/v1/data/sync/daily`, `/api/v1/data/sync/hourly` | Ingestion bearer key       | Run the same idempotent jobs manually                           |
-| POST     | `/api/v1/market/observations`                         | Ingestion bearer key       | Legacy manual observation import; not used by the live pipeline |
-| GET/POST | `/api/v1/me/messages`, `/api/v1/alerts/evaluate`      | Session/admin respectively | Legacy SMS stub endpoints                                       |
+| Method   | Endpoint                                              | Access                        | Purpose                                                         |
+| -------- | ----------------------------------------------------- | ----------------------------- | --------------------------------------------------------------- |
+| GET      | `/api/health`, `/api/docs`, `/api/openapi.json`       | Public                        | Health and documentation                                        |
+| POST     | `/api/auth/sign-in/social`                            | Rate limited                  | Start Google signup/login                                       |
+| GET      | `/api/v1/auth/providers`                              | Public                        | Enabled sign-in methods; flags only                             |
+| POST     | `/api/auth/phone-number/send-otp`                     | Optional Twilio, rate limited | Send a six-digit code to a UK mobile                            |
+| POST     | `/api/auth/phone-number/verify`                       | Optional Twilio, rate limited | Verify code, create/find account and issue session              |
+| POST     | `/api/auth/sign-up/email`, `/api/auth/sign-in/email`  | Development server only       | Local email/password accounts; 404 in production                |
+| GET/POST | `/api/auth/get-session`, `/sign-out`                  | Cookie                        | Session/logout                                                  |
+| GET      | `/api/v1/forecast`                                    | Public                        | Actual history and next 14 days, bounds and signals             |
+| GET      | `/api/v1/demo`                                        | Public                        | Explicitly synthetic example                                    |
+| GET/PUT  | `/api/v1/me/driver`                                   | Session cookie                | Car and mileage; PUT confirms a fresh gauge reading             |
+| PUT      | `/api/v1/me/onboarding`                               | Session cookie                | Save car, driving and selected nearby stations atomically       |
+| PATCH    | `/api/v1/me/tank`                                     | Session cookie                | Update current litres only                                      |
+| GET      | `/api/v1/me/stations/nearby?latitude=…&longitude=…`   | Session cookie                | Available E10 stations within five miles                        |
+| GET      | `/api/v1/me/stations`                                 | Session cookie                | Selected stations and up to 30 days of price observations       |
+| GET      | `/api/v1/me/dashboard`, `/api/v1/me/recommendation`   | Session cookie                | Personal buying plan                                            |
+| POST     | `/api/v1/data/sync/daily`, `/api/v1/data/sync/hourly` | Ingestion bearer key          | Run the same idempotent jobs manually                           |
+| POST     | `/api/v1/market/observations`                         | Ingestion bearer key          | Legacy manual observation import; not used by the live pipeline |
+| GET/POST | `/api/v1/me/messages`, `/api/v1/alerts/evaluate`      | Session/admin respectively    | Legacy SMS stub endpoints                                       |
 
 Application errors use `{ "error": { "code": "...", "message": "..." } }`; Better Auth keeps its own code/message format. Unsafe `/me` operations require the configured `Origin`; ownership comes from the verified session, never a submitted user ID. Onboarding validates one to three distinct stations within five miles on the server. Search coordinates are not stored on the driver profile.
 
 The dashboard can return `forecast: null`, `recommendation: null` and `forecastError` when market data is missing/stale, so users can still see/update their car. Live mode never falls back to a demo.
 
-## SMS
+## Phone authentication and SMS
 
-Google is the only production sign-in method. Local development servers also accept Better Auth email/password accounts; the simulator exposes this option as described in [the native setup guide](apps/native/README.md#local-sign-in-without-google). Both email endpoints and the underlying password provider are disabled outside `ENVIRONMENT=development`. Phone sign-in, OTP routes and the local OTP endpoint are removed. SMS notifications retain `StubSmsTransport`, the outbox, consent flags, retries and scheduled evaluation at 08:00 Europe/London. No real SMS is sent yet. Alerts still require an opted-in driver and a stored verified notification phone number. Those fields and existing sessions are preserved; a Google account without a phone can use the app and simply receives no SMS. The text-alert card remains removed and new onboardings default to no alerts. Adding/verifying a notification phone independently of sign-in will be a separate flow before enabling SMS for new Google users.
+Google sign-in is always available when configured. Phone sign-up/sign-in appears in web and native only when the API has all three Twilio Verify credentials: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_VERIFY_SERVICE_SID`. See [Twilio setup](PRODUCTION.md#phone-sign-in-optional). Twilio generates and checks six-digit SMS codes; Better Auth creates sessions and persists verified phone identities. UK local input is normalized to `+44` and the API validates mobile numbers. Discover availability through `GET /api/v1/auth/providers`, then send `{phoneNumber}` to `/api/auth/phone-number/send-otp` and `{phoneNumber, code}` to `/api/auth/phone-number/verify`. Set `Origin` to `APP_ORIGIN` or use Better Auth's Expo client. Preserve the returned session cookie. Limits apply per IP and per number, and provider errors are sanitized. Phone/password, password reset, account linking and development OTP inspection endpoints are not exposed.
+
+Local development servers also accept Better Auth email/password accounts; the simulator exposes this option as described in [the native setup guide](apps/native/README.md#local-sign-in-without-google). Both email endpoints and the underlying password provider are disabled outside `ENVIRONMENT=development`.
+
+Fuel SMS notifications retain `StubSmsTransport`, the outbox, consent flags, retries and scheduled evaluation at 08:00 Europe/London. Real SMS is sent for authentication only. Alerts still require an opted-in driver and a stored verified notification phone number. The text-alert card remains removed and new onboardings default to no alerts. Verifying a phone for sign-in does not opt into fuel alerts. Adding/verifying a notification phone independently of Google sign-in remains a separate future flow.
 
 Google identities are matched by their provider account, not by a phone number. Legacy phone-only users have placeholder emails and are not automatically merged with Google accounts. Their records remain intact; any account migration must explicitly link the correct identity.
 

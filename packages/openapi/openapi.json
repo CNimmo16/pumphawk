@@ -3,7 +3,7 @@
   "info": {
     "title": "Pump Hawk API",
     "version": "0.1.0",
-    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS is a persisted stub.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. Phone numbers are used only for opted-in SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret."
+    "description": "UK petrol forecasts and personal fill-up plans. Prices are GBP pence/litre, fuel is litres, and MPG is UK imperial. Separate daily and weekly fitted models with an explicitly labelled heuristic fallback; methodology: PRICES.md. Demo prices are synthetic. SMS alerts use a persisted stub; optional phone authentication uses Twilio Verify.\n\nAuthentication: POST /api/auth/sign-in/social with provider=google, then follow the returned Google authorization URL. Google returns to /api/auth/callback/google. Retain the HttpOnly session cookie. For unsafe authenticated requests set Origin to APP_ORIGIN (web) or pumphawk:// (native). The Expo client uses SecureStore session cookies and the trusted pumphawk:// OAuth callback. Better Auth owns authentication errors (code/message); application errors use the error envelope. All /api/v1/me routes require a valid session. GET /api/v1/auth/providers returns available sign-in methods. With Twilio configured, POST /api/auth/phone-number/send-otp then /api/auth/phone-number/verify to sign in or create an account with a UK mobile. Phone verification does not opt users into SMS alerts. POST /api/v1/market/observations uses the separate ingestion bearer secret."
   },
   "servers": [
     {
@@ -21,7 +21,7 @@
     },
     {
       "name": "Auth",
-      "description": "Google signup/login via Better Auth"
+      "description": "Google and optional Twilio phone signup/login via Better Auth"
     },
     {
       "name": "Alerts",
@@ -985,6 +985,60 @@
         },
         "required": [
           "currentLitres"
+        ]
+      },
+      "AuthProviders": {
+        "type": "object",
+        "properties": {
+          "google": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "boolean"
+          },
+          "localEmail": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "google",
+          "phone",
+          "localEmail"
+        ]
+      },
+      "PhoneOtpSend": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "pattern": "^\\+447\\d{9}$",
+            "description": "UK mobile in canonical E.164 format, e.g. +447700900123"
+          }
+        },
+        "required": [
+          "phoneNumber"
+        ],
+        "additionalProperties": false
+      },
+      "PhoneOtpVerify": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PhoneOtpSend"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{6}$",
+                "description": "Six-digit SMS code from Twilio Verify"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
         ]
       },
       "WeeklyOutlook": {
@@ -2944,6 +2998,311 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/providers": {
+      "get": {
+        "operationId": "getAuthProviders",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Discover sign-in methods enabled on this server",
+        "responses": {
+          "200": {
+            "description": "Availability flags only; never credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthProviders"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/phone-number/send-otp": {
+      "post": {
+        "operationId": "sendPhoneOtp",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Send a sign-in code to a UK mobile",
+        "description": "Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneOtpSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SMS verification started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid phone number, malformed or incorrect/expired code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Untrusted origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Phone sign-in temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/phone-number/verify": {
+      "post": {
+        "operationId": "verifyPhoneOtp",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify an SMS code and sign in or create an account",
+        "description": "Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneOtpVerify"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified user and session; sets session cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {}
+                  },
+                  "required": [
+                    "status",
+                    "token"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid phone number, malformed or incorrect/expired code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Untrusted origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Phone sign-in temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
                 }
               }
             }

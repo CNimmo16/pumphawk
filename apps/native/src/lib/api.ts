@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { phoneNumberClient } from "better-auth/client/plugins";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { client } from "@pump-hawk/openapi/client";
@@ -22,6 +23,7 @@ export const auth = createAuthClient({
   basePath: "/api/auth",
   fetchOptions: { customFetchImpl: fetchWithTimeout },
   plugins: [
+    phoneNumberClient(),
     expoClient({
       scheme: "pumphawk",
       storagePrefix: `pumphawk-${new URL(apiUrl).host.replace(/[^a-zA-Z0-9.-]/g, "-")}`,

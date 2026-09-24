@@ -1,5 +1,27 @@
 import { z } from "@hono/zod-openapi";
 export { z };
+export const AuthProvidersSchema = z
+  .object({
+    google: z.boolean(),
+    phone: z.boolean(),
+    localEmail: z.boolean(),
+  })
+  .openapi("AuthProviders");
+export const PhoneOtpSendSchema = z
+  .object({
+    phoneNumber: z
+      .string()
+      .regex(/^\+447\d{9}$/)
+      .describe("UK mobile in canonical E.164 format, e.g. +447700900123"),
+  })
+  .strict()
+  .openapi("PhoneOtpSend");
+export const PhoneOtpVerifySchema = PhoneOtpSendSchema.extend({
+  code: z
+    .string()
+    .regex(/^\d{6}$/)
+    .describe("Six-digit SMS code from Twilio Verify"),
+}).openapi("PhoneOtpVerify");
 export const ErrorSchema = z
   .object({ error: z.object({ code: z.string(), message: z.string() }) })
   .openapi("ApiError");

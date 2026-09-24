@@ -22,6 +22,14 @@ const directory = await mkdtemp(join(tmpdir(), "pump-hawk-secrets-"));
 // Registration lookup is optional; missing configuration leaves manual entry available.
 if (process.env.ONE_AUTO_API_KEY)
   values.ONE_AUTO_API_KEY = process.env.ONE_AUTO_API_KEY;
+// Wrangler's bulk API deletes secrets whose value is null.
+// Removing a GitHub credential must also disable an already-configured Worker.
+for (const name of [
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_VERIFY_SERVICE_SID",
+])
+  values[name] = process.env[name]?.trim() || null;
 try {
   const file = join(directory, "secrets.json");
   await writeFile(file, JSON.stringify(values), { mode: 0o600 });

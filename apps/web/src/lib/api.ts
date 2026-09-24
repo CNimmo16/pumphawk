@@ -1,8 +1,10 @@
 import { client } from "@pump-hawk/openapi/client";
 import { createAuthClient } from "better-auth/react";
+import { phoneNumberClient } from "better-auth/client/plugins";
 client.setConfig({ baseUrl: "", credentials: "include" });
 export const auth = createAuthClient({
   basePath: "/api/auth",
+  plugins: [phoneNumberClient()],
 });
 export function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "error" in error)

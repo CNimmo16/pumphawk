@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { evaluateAlerts, getApiAuthCallbackGoogle, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getVehicleLookupAvailability, getWeeklyOutlook, ingestObservations, lookupVehicle, type Options, postApiAuthSignInEmail, postApiAuthSignUpEmail, saveDriver, saveOnboarding, signInWithGoogle, signOut, syncData, updateTank, updateTrackedStations } from '../sdk.gen';
-import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, LookupVehicleData, LookupVehicleError, LookupVehicleResponse, PostApiAuthSignInEmailData, PostApiAuthSignInEmailError, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailError, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, UpdateTrackedStationsData, UpdateTrackedStationsError, UpdateTrackedStationsResponse } from '../types.gen';
+import { evaluateAlerts, getApiAuthCallbackGoogle, getAuthProviders, getDashboard, getDemoDashboard, getDriver, getForecast, getHealth, getMessages, getNearbyStations, getRecommendation, getSession, getTrackedStations, getVehicleLookupAvailability, getWeeklyOutlook, ingestObservations, lookupVehicle, type Options, postApiAuthSignInEmail, postApiAuthSignUpEmail, saveDriver, saveOnboarding, sendPhoneOtp, signInWithGoogle, signOut, syncData, updateTank, updateTrackedStations, verifyPhoneOtp } from '../sdk.gen';
+import type { EvaluateAlertsData, EvaluateAlertsError, EvaluateAlertsResponse, GetApiAuthCallbackGoogleData, GetAuthProvidersData, GetAuthProvidersResponse, GetDashboardData, GetDashboardError, GetDashboardResponse, GetDemoDashboardData, GetDemoDashboardError, GetDemoDashboardResponse, GetDriverData, GetDriverError, GetDriverResponse, GetForecastData, GetForecastError, GetForecastResponse, GetHealthData, GetHealthResponse, GetMessagesData, GetMessagesError, GetMessagesResponse, GetNearbyStationsData, GetNearbyStationsError, GetNearbyStationsResponse, GetRecommendationData, GetRecommendationError, GetRecommendationResponse, GetSessionData, GetTrackedStationsData, GetTrackedStationsError, GetTrackedStationsResponse, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityError, GetVehicleLookupAvailabilityResponse, GetWeeklyOutlookData, GetWeeklyOutlookError, GetWeeklyOutlookResponse, IngestObservationsData, IngestObservationsError, IngestObservationsResponse, LookupVehicleData, LookupVehicleError, LookupVehicleResponse, PostApiAuthSignInEmailData, PostApiAuthSignInEmailError, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailError, SaveDriverData, SaveDriverError, SaveDriverResponse, SaveOnboardingData, SaveOnboardingError, SaveOnboardingResponse, SendPhoneOtpData, SendPhoneOtpError, SendPhoneOtpResponse, SignInWithGoogleData, SignInWithGoogleError, SignInWithGoogleResponse, SignOutData, SignOutResponse, SyncDataData, SyncDataError, SyncDataResponse, UpdateTankData, UpdateTankError, UpdateTankResponse, UpdateTrackedStationsData, UpdateTrackedStationsError, UpdateTrackedStationsResponse, VerifyPhoneOtpData, VerifyPhoneOtpError, VerifyPhoneOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -338,6 +338,62 @@ export const syncDataMutation = (options?: Partial<Options<SyncDataData>>): UseM
     const mutationOptions: UseMutationOptions<SyncDataResponse, SyncDataError, Options<SyncDataData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await syncData({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getAuthProvidersQueryKey = (options?: Options<GetAuthProvidersData>) => createQueryKey('getAuthProviders', options);
+
+/**
+ * Discover sign-in methods enabled on this server
+ */
+export const getAuthProvidersOptions = (options?: Options<GetAuthProvidersData>) => queryOptions<GetAuthProvidersResponse, DefaultError, GetAuthProvidersResponse, ReturnType<typeof getAuthProvidersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getAuthProviders({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getAuthProvidersQueryKey(options)
+});
+
+/**
+ * Send a sign-in code to a UK mobile
+ *
+ * Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.
+ */
+export const sendPhoneOtpMutation = (options?: Partial<Options<SendPhoneOtpData>>): UseMutationOptions<SendPhoneOtpResponse, SendPhoneOtpError, Options<SendPhoneOtpData>> => {
+    const mutationOptions: UseMutationOptions<SendPhoneOtpResponse, SendPhoneOtpError, Options<SendPhoneOtpData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await sendPhoneOtp({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Verify an SMS code and sign in or create an account
+ *
+ * Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.
+ */
+export const verifyPhoneOtpMutation = (options?: Partial<Options<VerifyPhoneOtpData>>): UseMutationOptions<VerifyPhoneOtpResponse, VerifyPhoneOtpError, Options<VerifyPhoneOtpData>> => {
+    const mutationOptions: UseMutationOptions<VerifyPhoneOtpResponse, VerifyPhoneOtpError, Options<VerifyPhoneOtpData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await verifyPhoneOtp({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

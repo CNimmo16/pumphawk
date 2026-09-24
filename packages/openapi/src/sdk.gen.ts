@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityErrors, GetVehicleLookupAvailabilityResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, LookupVehicleData, LookupVehicleErrors, LookupVehicleResponses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailErrors, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailErrors, PostApiAuthSignUpEmailResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses, UpdateTrackedStationsData, UpdateTrackedStationsErrors, UpdateTrackedStationsResponses } from './types.gen';
+import type { EvaluateAlertsData, EvaluateAlertsErrors, EvaluateAlertsResponses, GetApiAuthCallbackGoogleData, GetAuthProvidersData, GetAuthProvidersResponses, GetDashboardData, GetDashboardErrors, GetDashboardResponses, GetDemoDashboardData, GetDemoDashboardErrors, GetDemoDashboardResponses, GetDriverData, GetDriverErrors, GetDriverResponses, GetForecastData, GetForecastErrors, GetForecastResponses, GetHealthData, GetHealthResponses, GetMessagesData, GetMessagesErrors, GetMessagesResponses, GetNearbyStationsData, GetNearbyStationsErrors, GetNearbyStationsResponses, GetRecommendationData, GetRecommendationErrors, GetRecommendationResponses, GetSessionData, GetSessionResponses, GetTrackedStationsData, GetTrackedStationsErrors, GetTrackedStationsResponses, GetVehicleLookupAvailabilityData, GetVehicleLookupAvailabilityErrors, GetVehicleLookupAvailabilityResponses, GetWeeklyOutlookData, GetWeeklyOutlookErrors, GetWeeklyOutlookResponses, IngestObservationsData, IngestObservationsErrors, IngestObservationsResponses, LookupVehicleData, LookupVehicleErrors, LookupVehicleResponses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailErrors, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailErrors, PostApiAuthSignUpEmailResponses, SaveDriverData, SaveDriverErrors, SaveDriverResponses, SaveOnboardingData, SaveOnboardingErrors, SaveOnboardingResponses, SendPhoneOtpData, SendPhoneOtpErrors, SendPhoneOtpResponses, SignInWithGoogleData, SignInWithGoogleErrors, SignInWithGoogleResponses, SignOutData, SignOutResponses, SyncDataData, SyncDataErrors, SyncDataResponses, UpdateTankData, UpdateTankErrors, UpdateTankResponses, UpdateTrackedStationsData, UpdateTrackedStationsErrors, UpdateTrackedStationsResponses, VerifyPhoneOtpData, VerifyPhoneOtpErrors, VerifyPhoneOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -231,6 +231,39 @@ export const syncData = <ThrowOnError extends boolean = false>(options: Options<
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/data/sync/{kind}',
     ...options
+});
+
+/**
+ * Discover sign-in methods enabled on this server
+ */
+export const getAuthProviders = <ThrowOnError extends boolean = false>(options?: Options<GetAuthProvidersData, ThrowOnError>): RequestResult<GetAuthProvidersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetAuthProvidersResponses, unknown, ThrowOnError>({ url: '/api/v1/auth/providers', ...options });
+
+/**
+ * Send a sign-in code to a UK mobile
+ *
+ * Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.
+ */
+export const sendPhoneOtp = <ThrowOnError extends boolean = false>(options: Options<SendPhoneOtpData, ThrowOnError>): RequestResult<SendPhoneOtpResponses, SendPhoneOtpErrors, ThrowOnError> => (options.client ?? client).post<SendPhoneOtpResponses, SendPhoneOtpErrors, ThrowOnError>({
+    url: '/api/auth/phone-number/send-otp',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Verify an SMS code and sign in or create an account
+ *
+ * Available only with all three Twilio Verify credentials. Retain Better Auth cookies (or use its Expo client on native). Codes are checked and consumed by Twilio. Per-number limits: 3 sends and 10 checks per 10 minutes, plus IP limits and Twilio protections. Does not enable SMS alerts or link an existing Google account. Phone/password and password-reset routes are not exposed.
+ */
+export const verifyPhoneOtp = <ThrowOnError extends boolean = false>(options: Options<VerifyPhoneOtpData, ThrowOnError>): RequestResult<VerifyPhoneOtpResponses, VerifyPhoneOtpErrors, ThrowOnError> => (options.client ?? client).post<VerifyPhoneOtpResponses, VerifyPhoneOtpErrors, ThrowOnError>({
+    url: '/api/auth/phone-number/verify',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

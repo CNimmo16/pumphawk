@@ -650,7 +650,13 @@ function Dashboard() {
           onClose={() => setModal(null)}
         >
           {modal === "auth" ? (
-            <AuthForm initialError={authError} />
+            <AuthForm
+              initialError={authError}
+              onSuccess={() => {
+                setModal(null);
+                void cache.invalidateQueries();
+              }}
+            />
           ) : modal === "tank" && car ? (
             <TankForm
               driver={car}

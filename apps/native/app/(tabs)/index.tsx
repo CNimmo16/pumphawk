@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { useDashboard } from "../../src/lib/queries";
-import { dateLabel, errorMessage, showLocalSignIn } from "../../src/lib/api";
+import { dateLabel, errorMessage } from "../../src/lib/api";
 import { Screen } from "../../src/components/screen";
 import {
   Body,
@@ -102,9 +102,7 @@ export default function Dashboard() {
           <Body>
             A plan built around your car, your week and your regular stops.
           </Body>
-          <Button onPress={() => router.push("/sign-in")}>
-            {showLocalSignIn ? "Sign in" : "Sign in with Google"}
-          </Button>
+          <Button onPress={() => router.push("/sign-in")}>Sign in</Button>
         </Card>
       )}
       {car && <TankCard car={car} advice={advice} />}

@@ -4,7 +4,7 @@ Expo SDK 57 / React Native 0.86, Expo Router, TypeScript and Tailwind 4 through 
 
 ## What is included
 
-- Google sign-in through Better Auth's Expo plugin, with session cookies in SecureStore. Saved settings are shared with the web app.
+- Google sign-in and optional Twilio phone sign-up/sign-in through Better Auth, with session cookies in SecureStore. Saved settings are shared with the web app.
 - Overview: personalised fill-up recommendation, buying amount, conditional savings, tank estimate, one combined daily/weekly outlook. The backend remains the single source of prediction and buying logic, including proactive filling ahead of a weekly rise.
 - National chart: 14 days of station-average history, seven daily predictions with certainty shading, then discrete official weekly predictions and range bars on available dates. A labelled day-seven handover distinguishes the benchmarks; no weekly-to-daily interpolation or artificial extension. Tap/drag, screen-reader actions and a date list reveal exact prices, ranges and signal contributions.
 - A caution appears when matched daily/weekly predicted changes have non-overlapping empirical ranges. Comparisons require fresh fitted models and a shared historical date, and exclude sample data. Missing later weekly dates are explained inline.
@@ -59,6 +59,10 @@ Set `EXPO_PUBLIC_API_URL` to the API's reachable origin (without `/api`), e.g. `
 Only `EXPO_PUBLIC_API_URL` is bundled as a public API setting. Do not copy Databento, Fuel Finder, database, Google client secret or session-signing secrets into this app.
 
 The local API serves **HTTP**, so `https://localhost:8787` will stall during the TLS handshake. Use `http://localhost:8787` and fully reload the app after editing `.env`. API and session requests time out after 15 seconds and offer a retry. You do not need another native build for this setting.
+
+### Phone sign-in
+
+Phone sign-in is also available when the API has all three Twilio Verify credentials. The app discovers this through `/api/v1/auth/providers`; no Twilio settings go in the native bundle. Use **Continue with phone**, enter a UK mobile number, then the six-digit code received on that phone. A simulator can use a code received on your physical phone. New users are created after verification; returning users recover the same phone account. See [Twilio setup](../../PRODUCTION.md#phone-sign-in-optional). This does not enable fuel SMS alerts or merge a Google account.
 
 ### Local sign-in without Google
 

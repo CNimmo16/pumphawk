@@ -42,6 +42,24 @@ Set up the Google consent screen for external users; while it is in testing mode
 
 No database migration is required: Better Auth's existing account/session tables support Google, and the notification phone fields are retained. Existing phone-only identities use placeholder emails and are not automatically merged into newly created Google identities; preserve their data and use an explicit identity-linking migration if needed.
 
+## Phone sign-in (optional)
+
+Phone sign-up/sign-in uses **Twilio Verify**, alongside Google, in both web and native. In the [Twilio Console](https://console.twilio.com/), create a Verify service named **Pump Hawk**, enable SMS and set its **code length to 6**. Enable United Kingdom SMS traffic in [Verify Geo Permissions](https://www.twilio.com/docs/verify/preventing-toll-fraud/verify-geo-permissions); keeping Fraud Guard enabled is recommended. The app accepts UK mobile numbers only. [Verify service settings](https://www.twilio.com/docs/verify/api/service).
+
+Add all three as **secrets** in GitHub's **production** environment:
+
+| Secret                      | Value                                                         |
+| --------------------------- | ------------------------------------------------------------- |
+| `TWILIO_ACCOUNT_SID`        | Account SID (`AC…`) from the Twilio Console account dashboard |
+| `TWILIO_AUTH_TOKEN`         | Auth Token for that same Twilio account                       |
+| `TWILIO_VERIFY_SERVICE_SID` | The Verify service SID (`VA…`), not a Messaging Service SID   |
+
+Use live account credentials. Trial accounts require the destination number to be verified with Twilio. No sender phone number or Messaging Service SID is needed for this Verify integration. These credentials stay on the API Worker; do not use `VITE_` or `EXPO_PUBLIC_` prefixes. For local testing, add the same names to `services/api/.dev.vars` and restart the API.
+
+After adding the secrets, deploy `main` (or rerun the deployment workflow). Changing GitHub secrets alone does not update an already-deployed Worker. `GET /api/v1/auth/providers` should then report `phone: true`. Phone endpoints return 404 and clients hide the option when any credential is missing. Removing a credential and deploying deletes that Worker secret and disables phone sign-in again.
+
+Twilio creates and checks the SMS code. Better Auth creates the verified phone identity and normal session only after approval; repeated sign-ins find the same phone identity. The app limits each number to three sends and ten checks per ten minutes, plus IP limits. First-time phone sign-up does not subscribe users to fuel alerts or automatically link an existing Google account. Existing phone users can sign in using their stored number. No database migration is required. Fuel alert delivery remains the separate SMS stub.
+
 ## Neon connections
 
 In Neon’s **Connect** dialog, select the production branch, database and role. Copy the URI with **Connection pooling** enabled into `DATABASE_URL`; switch pooling off and copy the direct URI into `DIRECT_DATABASE_URL`. Preserve Neon’s TLS parameters. Both URLs must target the same database and branch. The migration role needs permission to create schemas, tables and indexes.
@@ -82,7 +100,7 @@ On 18 September 2026, production's last daily observation was 16 September and a
 - Models: 08:05 UTC; daily snapshots freeze information available strictly before 08:00. The weekly origin stays at the conservative Thursday 08:00 cutoff. Dashboard requests can materialise a missing forecast from stored inputs without provider calls.
 - `forecast_run` preserves each model version's features and results at each origin. Compare future observations against these immutable runs rather than recomputing past forecasts with corrected inputs.
 - Daily buying advice uses seven forecast days and explicit 0.5p/L / £1 materiality thresholds. The weekly outlook can trigger an early fill ahead of a later material rise, even if fuel is not needed within seven days. Dashboard, recommendation API and SMS evaluation share these inputs and rules. Days 8–14 of the daily model remain informational; its 14-day band is not calibrated to 90% coverage.
-- Sign-in uses Google OAuth. SMS alerts retain their database-backed stub, opt-in flags and verified notification numbers; phone authentication and development OTP routes are removed. Google users do not need a phone number to access their car or dashboard.
+- Sign-in uses Google OAuth or optional Twilio Verify phone codes. SMS alerts retain their database-backed stub, opt-in flags and verified notification numbers. Development OTP inspection routes remain absent. Google users do not need a phone number to access their car or dashboard.
 
 Roll back a faulty Worker version with Wrangler or the Cloudflare dashboard, then rerun the deployment smoke checks. These database migrations are additive. Do not drop new tables during an application rollback or delete issued forecasts to make monitoring look better.
 

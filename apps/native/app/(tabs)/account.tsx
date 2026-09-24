@@ -44,7 +44,8 @@ export default function Account() {
         </Heading>
         <Body>
           {data.signedIn
-            ? data.session.data?.user.email
+            ? (data.session.data?.user.phoneNumber ??
+              data.session.data?.user.email)
             : "Your car, driving schedule and stations stay in sync across the app and website."}
         </Body>
         {data.session.error ? (

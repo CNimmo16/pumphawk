@@ -14,6 +14,7 @@ import {
   type SmsTransport,
 } from "../lib/sms/sms.service";
 import { AuthService } from "../lib/auth/auth.service";
+import { TwilioVerifyService } from "../lib/auth/twilio-verify.service";
 import { MarketService } from "../pricing/market.service";
 import { DriverService } from "../drivers/driver.service";
 import { VehicleService } from "../drivers/vehicle.service";
@@ -32,6 +33,7 @@ export function buildInjector(
     .provideValue("smsTransport", transport)
     .provideClass("dbService", DbService)
     .provideClass("smsService", SmsService)
+    .provideClass("twilioVerifyService", TwilioVerifyService)
     .provideClass("authService", AuthService)
     .provideClass("databentoService", DatabentoService)
     .provideClass("fuelFinderService", FuelFinderService)

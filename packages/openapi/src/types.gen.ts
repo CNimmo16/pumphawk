@@ -220,6 +220,26 @@ export type TankInput = {
     currentLitres: number;
 };
 
+export type AuthProviders = {
+    google: boolean;
+    phone: boolean;
+    localEmail: boolean;
+};
+
+export type PhoneOtpSend = {
+    /**
+     * UK mobile in canonical E.164 format, e.g. +447700900123
+     */
+    phoneNumber: string;
+};
+
+export type PhoneOtpVerify = PhoneOtpSend & {
+    /**
+     * Six-digit SMS code from Twilio Verify
+     */
+    code: string;
+};
+
 export type WeeklyOutlook = {
     model: 'weekly-huber';
     modelVersion: string;
@@ -1128,6 +1148,134 @@ export type SyncDataResponses = {
 };
 
 export type SyncDataResponse = SyncDataResponses[keyof SyncDataResponses];
+
+export type GetAuthProvidersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/providers';
+};
+
+export type GetAuthProvidersResponses = {
+    /**
+     * Availability flags only; never credentials
+     */
+    200: AuthProviders;
+};
+
+export type GetAuthProvidersResponse = GetAuthProvidersResponses[keyof GetAuthProvidersResponses];
+
+export type SendPhoneOtpData = {
+    body: PhoneOtpSend;
+    path?: never;
+    query?: never;
+    url: '/api/auth/phone-number/send-otp';
+};
+
+export type SendPhoneOtpErrors = {
+    /**
+     * Invalid phone number, malformed or incorrect/expired code
+     */
+    400: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Untrusted origin
+     */
+    403: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Too many attempts
+     */
+    429: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Phone sign-in temporarily unavailable
+     */
+    503: {
+        code: string;
+        message: string;
+    };
+};
+
+export type SendPhoneOtpError = SendPhoneOtpErrors[keyof SendPhoneOtpErrors];
+
+export type SendPhoneOtpResponses = {
+    /**
+     * SMS verification started
+     */
+    200: {
+        message: string;
+    };
+};
+
+export type SendPhoneOtpResponse = SendPhoneOtpResponses[keyof SendPhoneOtpResponses];
+
+export type VerifyPhoneOtpData = {
+    body: PhoneOtpVerify;
+    path?: never;
+    query?: never;
+    url: '/api/auth/phone-number/verify';
+};
+
+export type VerifyPhoneOtpErrors = {
+    /**
+     * Invalid phone number, malformed or incorrect/expired code
+     */
+    400: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Untrusted origin
+     */
+    403: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Resource not found
+     */
+    404: ApiError;
+    /**
+     * Too many attempts
+     */
+    429: {
+        code: string;
+        message: string;
+    };
+    /**
+     * Phone sign-in temporarily unavailable
+     */
+    503: {
+        code: string;
+        message: string;
+    };
+};
+
+export type VerifyPhoneOtpError = VerifyPhoneOtpErrors[keyof VerifyPhoneOtpErrors];
+
+export type VerifyPhoneOtpResponses = {
+    /**
+     * Verified user and session; sets session cookie
+     */
+    200: {
+        status: true;
+        token: string;
+        user?: unknown;
+    };
+};
+
+export type VerifyPhoneOtpResponse = VerifyPhoneOtpResponses[keyof VerifyPhoneOtpResponses];
 
 export type GetWeeklyOutlookData = {
     body?: never;
