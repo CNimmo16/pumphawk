@@ -14,7 +14,19 @@ const config: ExpoConfig = {
     supportsTablet: true,
     config: { usesNonExemptEncryption: false },
   },
-  android: { package: "uk.pumphawk.app", softwareKeyboardLayoutMode: "resize" },
+  android: {
+    package: "uk.pumphawk.app",
+    softwareKeyboardLayoutMode: "resize",
+    // Station lookup uses foreground location; the app does not access user files.
+    blockedPermissions: [
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.ACCESS_BACKGROUND_LOCATION",
+      ...(process.env.EAS_BUILD_PROFILE === "production"
+        ? ["android.permission.SYSTEM_ALERT_WINDOW"]
+        : []),
+    ],
+  },
   plugins: [
     "expo-router",
     "expo-status-bar",
@@ -47,7 +59,7 @@ const config: ExpoConfig = {
     androidMapsConfigured: Boolean(process.env.GOOGLE_MAPS_ANDROID_API_KEY),
     eas: {
       projectId: "b4352b09-1b05-4ca8-8089-0a6167b334c8",
-    }
+    },
   },
 };
 export default config;

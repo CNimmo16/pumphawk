@@ -52,6 +52,10 @@ pnpm dev:native
 
 Open the QR/development URL in the installed development client. Use a development build, not Expo Go: the app includes custom native keyboard, gesture, map and animation modules. The `pumphawk` scheme is configured in `app.config.ts`; changing it requires a new native build and corresponding server/client auth changes.
 
+## Google Play release
+
+See [PLAY_STORE.md](PLAY_STORE.md) for the signed Android App Bundle build, maps key and signing-certificate setup, internal-test upload, and outstanding public-launch requirements. The `production` build uses the deployed API and remote version numbering; the `internal` submission profile uploads a draft. Web/API deployments do not automatically publish native releases.
+
 ## Local backend
 
 Set `EXPO_PUBLIC_API_URL` to the API's reachable origin (without `/api`), e.g. `http://localhost:8787` for the iOS simulator or `http://10.0.2.2:8787` for the Android emulator. A physical phone needs a reachable LAN/tunnel address and the API listening on that interface. Google OAuth also requires the backend's `BETTER_AUTH_URL` and Google redirect configuration to match a browser-reachable callback. Using the deployed HTTPS API is the simplest development-build setup; a device's `localhost` is not your laptop. Clear Metro with `pnpm dev:native --clear` after changing public environment variables.

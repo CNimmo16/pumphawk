@@ -16,3 +16,9 @@ services/api/wrangler.production.json
 apps/native/.expo/
 apps/native/ios/
 apps/native/android/
+
+# Android signing and Play service-account credentials
+*.jks
+*.keystore
+credentials.json
+google-play-service-account*.json
